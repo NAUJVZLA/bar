@@ -1,0 +1,776 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { mockDb, Mesa, Producto, ConsumoItem, Venta } from '@/lib/supabaseClient';
+import { printThermalReceipt } from '@/lib/printUtils';
+
+export default function MesasPage() {
+  const [activeSedeId, setActiveSedeId] = useState('');
+  const [mesas, setMesas] = useState<Mesa[]>([]);
+  const [productos, setProductos] = useState<Producto[]>([]);
+  
+  // Modals state
+  const [selectedMesa, setSelectedMesa] = useState<Mesa | null>(null);
+  const [showOpenModal, setShowOpenModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showAddConsumoModal, setShowAddConsumoModal] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+
+  // Venta completada de mesa para previsualización e impresión
+  const [completedVenta, setCompletedVenta] = useState<Venta | null>(null);
+  const [lastCheckoutMesaNum, setLastCheckoutMesaNum] = useState('');
+
+  // Forms state
+  const [clienteNombreInput, setClienteNombreInput] = useState('');
+  const [atendidoPorInput, setAtendidoPorInput] = useState('');
+  
+  // Agregar consumo form
+  const [selectedProdId, setSelectedProdId] = useState('');
+  const [cantidadInput, setCantidadInput] = useState(1);
+  const [atendidoPorConsumo, setAtendidoPorConsumo] = useState('');
+
+  // Checkout form
+  const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'CREDITO'>('EFECTIVO');
+  
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const loadSedeData = () => {
+    const currentSedeId = localStorage.getItem('alico_active_sede') || 'sede-norte';
+    setActiveSedeId(currentSedeId);
+    setMesas(mockDb.getMesas(currentSedeId));
+    setProductos(mockDb.getProductos(currentSedeId));
+  };
+
+  useEffect(() => {
+    loadSedeData();
+
+    // Sincronizar reactivamente al cambiar de sede
+    const handleSedeChange = () => {
+      loadSedeData();
+      closeAllModals();
+    };
+    window.addEventListener('sedeChanged', handleSedeChange);
+    return () => window.removeEventListener('sedeChanged', handleSedeChange);
+  }, []);
+
+  const closeAllModals = () => {
+    setSelectedMesa(null);
+    setShowOpenModal(false);
+    setShowDetailModal(false);
+    setShowAddConsumoModal(false);
+    setShowCheckoutModal(false);
+    setClienteNombreInput('');
+    setAtendidoPorInput('');
+    setSelectedProdId('');
+    setCantidadInput(1);
+    setAtendidoPorConsumo('');
+    setErrorMsg('');
+    setSuccessMsg('');
+  };
+
+  // 1. ABRIR MESA (DISPONIBLE -> OCUPADA)
+  const handleOpenMesaClick = (mesa: Mesa) => {
+    setSelectedMesa(mesa);
+    setShowOpenModal(true);
+  };
+
+  const submitOpenMesa = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMesa) return;
+    if (!clienteNombreInput.trim() || !atendidoPorInput.trim()) {
+      setErrorMsg('Por favor rellena todos los campos para auditoría.');
+      return;
+    }
+
+    mockDb.updateMesaEstado(selectedMesa.id, 'OCUPADA', clienteNombreInput);
+    setSuccessMsg(`¡Mesa ${selectedMesa.numero_mesa} abierta con éxito!`);
+    
+    // Guardar atendido por en local para recordar responsable
+    localStorage.setItem('alico_last_waiter', atendidoPorInput);
+    
+    loadSedeData();
+    setTimeout(() => closeAllModals(), 600);
+  };
+
+  // 2. VER DETALLES MESA (OCUPADA o PAGANDO)
+  const handleDetailMesaClick = (mesa: Mesa) => {
+    setSelectedMesa(mesa);
+    setShowDetailModal(true);
+    // Cargar mesero guardado
+    const cachedWaiter = localStorage.getItem('alico_last_waiter') || '';
+    setAtendidoPorConsumo(cachedWaiter);
+  };
+
+  // 3. AGREGAR CONSUMO A MESA
+  const handleAddConsumoClick = () => {
+    setShowDetailModal(false);
+    setShowAddConsumoModal(true);
+  };
+
+  const submitAddConsumo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedMesa) return;
+    if (!selectedProdId) {
+      setErrorMsg('Por favor selecciona un producto.');
+      return;
+    }
+    if (!atendidoPorConsumo.trim()) {
+      setErrorMsg('Especifica qué mesero agrega la ronda.');
+      return;
+    }
+
+    const prod = productos.find(p => p.id === selectedProdId);
+    if (!prod) return;
+
+    try {
+      mockDb.agregarConsumoMesa(selectedMesa.id, prod, cantidadInput, atendidoPorConsumo);
+      
+      // Guardar mesero
+      localStorage.setItem('alico_last_waiter', atendidoPorConsumo);
+      
+      setSuccessMsg('Consumo añadido con éxito y stock descontado.');
+      
+      // Recargar y volver al detalle
+      loadSedeData();
+      setTimeout(() => {
+        // Encontrar mesa actualizada
+        const updatedMesa = mockDb.getMesas(activeSedeId).find(m => m.id === selectedMesa.id);
+        closeAllModals();
+        if (updatedMesa) {
+          handleDetailMesaClick(updatedMesa);
+        }
+      }, 600);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error al agregar consumo.');
+    }
+  };
+
+  // 4. CANCELAR CONSUMO (QUITAR ITEM DE LA MESA)
+  const handleCancelConsumo = (consumoId: string) => {
+    if (!selectedMesa) return;
+    if (!confirm('¿Deseas cancelar este consumo? El stock regresará a bodega de forma auditada.')) return;
+
+    const waiter = localStorage.getItem('alico_last_waiter') || 'Administrador';
+    const res = mockDb.cancelarConsumoMesa(selectedMesa.id, consumoId, waiter);
+    
+    loadSedeData();
+    if (res) {
+      setSelectedMesa(res);
+      setSuccessMsg('Consumo cancelado y stock retornado a bodega.');
+      setTimeout(() => setErrorMsg(''), 2000);
+    } else {
+      closeAllModals();
+    }
+  };
+
+  // 5. SOLICITAR CUENTA (OCUPADA -> PAGANDO)
+  const handleRequestBill = () => {
+    if (!selectedMesa) return;
+    mockDb.updateMesaEstado(selectedMesa.id, 'PAGANDO');
+    loadSedeData();
+    const updatedMesa = mockDb.getMesas(activeSedeId).find(m => m.id === selectedMesa.id);
+    if (updatedMesa) {
+      setSelectedMesa(updatedMesa);
+    }
+    setSuccessMsg('Estado cambiado a: Pidiendo Cuenta.');
+    setTimeout(() => setSuccessMsg(''), 2000);
+  };
+
+  // 6. CERRAR Y COBRAR MESA (PAGANDO -> DISPONIBLE)
+  const handleCheckoutClick = () => {
+    setShowDetailModal(false);
+    setShowCheckoutModal(true);
+  };
+
+  const submitCheckoutMesa = () => {
+    if (!selectedMesa) return;
+    const subtotal = selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0);
+    const impoconsumo = Math.round(subtotal * 0.08);
+    const total = subtotal + impoconsumo;
+    const waiter = localStorage.getItem('alico_last_waiter') || 'Administrador';
+
+    if (metodoPago === 'CREDITO' && (!selectedMesa.cliente_nombre.trim() || selectedMesa.cliente_nombre.trim() === 'Cliente General')) {
+      setErrorMsg('Debe registrar un nombre real para el cliente de la mesa antes de poder cerrar a crédito / fiar la cuenta.');
+      return;
+    }
+
+    try {
+      // Registrar venta
+      const itemsVenta = selectedMesa.consumos.map(c => ({
+        producto_id: c.producto_id,
+        nombre: c.nombre,
+        cantidad: c.cantidad,
+        precio_unitario: c.precio_unitario
+      }));
+
+      const createdVenta = mockDb.registrarVenta({
+        sede_id: activeSedeId,
+        cliente_nombre: selectedMesa.cliente_nombre,
+        total: total,
+        metodo_pago: metodoPago,
+        atendido_por: waiter,
+        es_directa: false, // El stock ya se redujo cuando se agregaron los consumos
+        items: itemsVenta
+      });
+
+      // Guardar mesaNumero y venta completada
+      setLastCheckoutMesaNum(selectedMesa.numero_mesa);
+      setCompletedVenta(createdVenta);
+
+      // Liberar mesa
+      mockDb.updateMesaEstado(selectedMesa.id, 'DISPONIBLE');
+      
+      setSuccessMsg('Mesa cobrada y liberada con éxito. ¡Venta registrada!');
+      
+      // Recargar todo
+      loadSedeData();
+      
+      // Emitir cambio de sede global para actualizar dashboard
+      window.dispatchEvent(new Event('sedeChanged'));
+      
+      // Ocultar modal de cobro y dejar que el ticket digital tome el control
+      setShowCheckoutModal(false);
+      setSelectedMesa(null);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error al procesar cobro.');
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-white font-sans">Control de Mesas</h1>
+        <p className="text-xs text-zinc-400 font-semibold mt-1">
+          Mapa de consumo y salones del establecimiento.
+        </p>
+      </div>
+
+      {/* Leyenda de estados */}
+      <div className="flex flex-wrap gap-4 p-3 bg-zinc-950/40 border border-white/5 rounded-2xl">
+        <div className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded-md bg-emerald-500/20 border border-emerald-500/40"></span>
+          <span className="text-[10px] font-bold text-emerald-400">Libre / Disponible</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded-md bg-red-500/20 border border-red-500/40"></span>
+          <span className="text-[10px] font-bold text-red-400">Ocupada / Consumiendo</span>
+        </div>
+        <div className="flex items-center gap-2 animate-pulse">
+          <span className="h-3.5 w-3.5 rounded-md bg-yellow-500/20 border border-yellow-500/40"></span>
+          <span className="text-[10px] font-bold text-yellow-400">Pidiendo Cuenta (Pagar)</span>
+        </div>
+      </div>
+
+      {/* Grid del Salón de Mesas */}
+      {mesas.length === 0 ? (
+        <div className="glass-card rounded-2xl p-10 text-center">
+          <p className="text-xs text-zinc-400">No hay mesas configuradas para esta sede.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {mesas.map((mesa) => {
+            const subtotalMesa = mesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0);
+            const isOpen = mesa.estado === 'OCUPADA';
+            const isPaying = mesa.estado === 'PAGANDO';
+            const isFree = mesa.estado === 'DISPONIBLE';
+
+            return (
+              <button
+                key={mesa.id}
+                type="button"
+                onClick={() => isFree ? handleOpenMesaClick(mesa) : handleDetailMesaClick(mesa)}
+                className={`glass-card rounded-2xl p-5 border text-left flex flex-col justify-between h-40 transition-all ${
+                  isFree
+                    ? 'border-emerald-500/10 hover:border-emerald-500/35 hover:bg-emerald-950/5'
+                    : isPaying
+                      ? 'border-yellow-500/30 hover:border-yellow-500/50 hover:bg-yellow-950/5 glow-amber animate-pulse'
+                      : 'border-red-500/15 hover:border-red-500/35 hover:bg-red-950/5'
+                }`}
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-lg text-black ${
+                      isFree
+                        ? 'bg-emerald-500'
+                        : isPaying
+                          ? 'bg-yellow-500'
+                          : 'bg-red-500'
+                    }`}>
+                      {mesa.numero_mesa}
+                    </span>
+                    <span className="h-2 w-2 rounded-full animate-ping bg-current" style={{
+                      color: isFree ? '#10b981' : isPaying ? '#eab308' : '#ef4444'
+                    }}></span>
+                  </div>
+
+                  <p className="text-[11px] font-extrabold text-white mt-3 truncate max-w-[120px]">
+                    {isFree ? 'Vacía' : mesa.cliente_nombre || 'Cliente General'}
+                  </p>
+                  <p className="text-[9px] text-zinc-500 mt-0.5">
+                    {!isFree && `${mesa.consumos.length} items ordenados`}
+                  </p>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between w-full">
+                  <p className="text-[10px] text-zinc-400 font-semibold">Total Bill</p>
+                  <p className={`text-xs font-black ${isFree ? 'text-zinc-500' : 'text-amber-500'}`}>
+                    ${subtotalMesa.toLocaleString('es-CO')}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL 1: ABRIR MESA (DISPONIBLE -> OCUPADA) */}
+      {/* ============================================================== */}
+      {showOpenModal && selectedMesa && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-40">
+          <div className="glass-card rounded-2xl p-6 border border-white/10 max-w-sm w-full relative">
+            <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
+              Abrir {selectedMesa.numero_mesa}
+            </h3>
+
+            {errorMsg && (
+              <div className="p-2.5 rounded bg-red-950/20 border border-red-500/20 text-red-300 text-xs font-semibold mb-4">
+                {errorMsg}
+              </div>
+            )}
+
+            <form onSubmit={submitOpenMesa} className="space-y-4">
+              <div>
+                <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+                  Nombre del Cliente
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={clienteNombreInput}
+                  onChange={(e) => setClienteNombreInput(e.target.value)}
+                  placeholder="Ej. Andrés López o Mesa 4"
+                  className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+                  ¿Quién atiende la mesa?
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={atendidoPorInput}
+                  onChange={(e) => setAtendidoPorInput(e.target.value)}
+                  placeholder="Ej. Diana Cajera"
+                  className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={closeAllModals}
+                  className="flex-1 h-9 rounded-lg bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 h-9 rounded-lg btn-gold text-xs font-bold transition-all"
+                >
+                  Abrir Mesa
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL 2: VER DETALLE DE CONSUMOS (OCUPADA / PAGANDO) */}
+      {/* ============================================================== */}
+      {showDetailModal && selectedMesa && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-40">
+          <div className="glass-card rounded-2xl p-6 border border-white/10 max-w-lg w-full relative">
+            
+            {/* Header del detalle */}
+            <div className="flex items-center justify-between pb-3 border-b border-white/5 mb-4">
+              <div>
+                <span className="text-xs font-black uppercase bg-amber-500 text-black px-2.5 py-0.5 rounded-md">
+                  {selectedMesa.numero_mesa}
+                </span>
+                <span className="text-[10px] text-zinc-400 ml-3 font-semibold">
+                  Cliente: <span className="text-white">{selectedMesa.cliente_nombre}</span>
+                </span>
+              </div>
+              <button onClick={closeAllModals} className="text-zinc-500 hover:text-white text-xs">
+                Cerrar
+              </button>
+            </div>
+
+            {successMsg && (
+              <div className="p-2.5 rounded bg-emerald-950/20 border border-emerald-500/20 text-emerald-300 text-xs font-semibold mb-4">
+                {successMsg}
+              </div>
+            )}
+
+            {/* Listado de items consumidos */}
+            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1 mb-4">
+              <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5">Consumo Acumulado</p>
+              {selectedMesa.consumos.length === 0 ? (
+                <p className="text-[10px] text-zinc-500 text-center py-4">No hay consumos registrados. ¡Agrega una ronda!</p>
+              ) : (
+                selectedMesa.consumos.map((c) => (
+                  <div key={c.id} className="p-2.5 bg-black/40 border border-white/5 rounded-xl flex items-center justify-between gap-3">
+                    <div className="truncate flex-1">
+                      <p className="text-[11px] font-bold text-white truncate">{c.nombre}</p>
+                      <p className="text-[9px] text-zinc-500 mt-0.5">
+                        {c.cantidad} U. • ${c.precio_unitario.toLocaleString('es-CO')} c/u
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <p className="text-[11px] font-extrabold text-white">
+                        ${(c.precio_unitario * c.cantidad).toLocaleString('es-CO')}
+                      </p>
+                      <button
+                        onClick={() => handleCancelConsumo(c.id)}
+                        className="text-red-500 hover:text-red-400 p-1"
+                        title="Cancelar consumo (retorna a bodega)"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                          <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75V4H3a.75.75 0 000 1.5h1v10A2.25 2.25 0 006.25 17.75h7.5A2.25 2.25 0 0016 15.5v-10h1a.75.75 0 000-1.5h-3v-.25A2.75 2.75 0 0011.25 1h-2.5zM8 4h4v-.25a1.25 1.25 0 00-1.25-1.25h-2.5A1.25 1.25 0 008 3.75V4zM5.5 5.5h9v10a.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75v-10z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Fila del subtotal y IPO */}
+            {selectedMesa.consumos.length > 0 && (
+              <div className="p-3 bg-zinc-950/80 border border-white/5 rounded-xl mb-4 space-y-1">
+                <div className="flex justify-between text-[10px] text-zinc-500 font-semibold">
+                  <span>Consumo Neto</span>
+                  <span>${selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0).toLocaleString('es-CO')}</span>
+                </div>
+                <div className="flex justify-between text-[10px] text-zinc-500 font-semibold">
+                  <span>IPO (8% impoconsumo bar)</span>
+                  <span>${Math.round(selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0) * 0.08).toLocaleString('es-CO')}</span>
+                </div>
+                <div className="flex justify-between text-xs font-black text-white pt-1.5 border-t border-white/5">
+                  <span className="text-amber-500">Total Acumulado</span>
+                  <span className="text-amber-500">${(
+                    selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0) + 
+                    Math.round(selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0) * 0.08)
+                  ).toLocaleString('es-CO')}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Acciones principales de mesa */}
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={handleAddConsumoClick}
+                className="flex-1 h-9 rounded-lg bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+              >
+                + Cargar Bebidas / Rondas
+              </button>
+
+              {selectedMesa.consumos.length > 0 && (
+                <>
+                  {selectedMesa.estado === 'OCUPADA' ? (
+                    <button
+                      type="button"
+                      onClick={handleRequestBill}
+                      className="flex-1 h-9 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      Pide Cuenta (Amarillo)
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleCheckoutClick}
+                      className="flex-1 h-9 rounded-lg btn-gold text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      Cerrar y Cobrar Mesa
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL 3: AGREGAR CONSUMO (PEDIDOS/COMANDAS) */}
+      {/* ============================================================== */}
+      {showAddConsumoModal && selectedMesa && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-40">
+          <div className="glass-card rounded-2xl p-6 border border-white/10 max-w-sm w-full relative">
+            <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
+              Cargar Pedido a {selectedMesa.numero_mesa}
+            </h3>
+
+            {errorMsg && (
+              <div className="p-2.5 rounded bg-red-950/20 border border-red-500/20 text-red-300 text-xs font-semibold mb-4">
+                {errorMsg}
+              </div>
+            )}
+
+            <form onSubmit={submitAddConsumo} className="space-y-4">
+              <div>
+                <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+                  Seleccionar Producto
+                </label>
+                <select
+                  value={selectedProdId}
+                  onChange={(e) => setSelectedProdId(e.target.value)}
+                  required
+                  className="w-full bg-[#0a0a0c] border border-white/10 rounded-lg py-2 px-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
+                >
+                  <option value="">Selecciona un licor / bebida...</option>
+                  {productos.map((p) => (
+                    <option key={p.id} value={p.id} disabled={p.stock_actual <= 0}>
+                      {p.nombre} (Dispo: {p.stock_actual}) - ${p.precio_venta.toLocaleString('es-CO')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+                    Cantidad
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={cantidadInput}
+                    onChange={(e) => setCantidadInput(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+                    Mesero Responsable
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={atendidoPorConsumo}
+                    onChange={(e) => setAtendidoPorConsumo(e.target.value)}
+                    placeholder="Ej. Diana Cajera"
+                    className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeAllModals();
+                    handleDetailMesaClick(selectedMesa);
+                  }}
+                  className="flex-1 h-9 rounded-lg bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition-all"
+                >
+                  Volver
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 h-9 rounded-lg btn-gold text-xs font-bold transition-all"
+                >
+                  Agregar Ronda
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* MODAL 4: COBRAR Y FACTURAR MESA (PAGANDO -> DISPONIBLE) */}
+      {/* ============================================================== */}
+      {showCheckoutModal && selectedMesa && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-40">
+          <div className="glass-card rounded-2xl p-6 border border-white/10 max-w-sm w-full relative">
+            <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4 border-b border-white/5 pb-2">
+              Cobrar {selectedMesa.numero_mesa}
+            </h3>
+
+            {errorMsg && (
+              <div className="p-2.5 rounded bg-red-950/20 border border-red-500/20 text-red-300 text-xs font-semibold mb-4">
+                {errorMsg}
+              </div>
+            )}
+            
+            {successMsg && (
+              <div className="p-2.5 rounded bg-emerald-950/20 border border-emerald-500/20 text-emerald-300 text-xs font-semibold mb-4">
+                {successMsg}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="p-3.5 bg-black/60 border border-white/5 rounded-2xl">
+                <div className="flex justify-between text-[10px] text-zinc-400 font-semibold mb-1">
+                  <span>Cliente</span>
+                  <span className="text-white font-bold">{selectedMesa.cliente_nombre}</span>
+                </div>
+                <div className="flex justify-between text-[10px] text-zinc-400 font-semibold mb-2">
+                  <span>Consumos acumulados</span>
+                  <span className="text-white font-bold">{selectedMesa.consumos.length} items</span>
+                </div>
+                
+                <div className="flex justify-between text-xs font-black text-white pt-2 border-t border-white/5">
+                  <span className="text-amber-500">Monto Facturado</span>
+                  <span className="text-amber-500">${(
+                    selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0) + 
+                    Math.round(selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0) * 0.08)
+                  ).toLocaleString('es-CO')}</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+                  Método de Pago
+                </label>
+                <select
+                  value={metodoPago}
+                  onChange={(e: any) => setMetodoPago(e.target.value)}
+                  className="w-full bg-[#0a0a0c] border border-white/10 rounded-lg py-2.5 px-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
+                >
+                  <option value="EFECTIVO">Efectivo</option>
+                  <option value="TARJETA">Tarjeta</option>
+                  <option value="TRANSFERENCIA">Transferencia bancaria / Nequi</option>
+                  <option value="CREDITO">Crédito (Fiar Cuenta)</option>
+                </select>
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeAllModals();
+                    handleDetailMesaClick(selectedMesa);
+                  }}
+                  className="flex-1 h-9 rounded-lg bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition-all"
+                >
+                  Volver
+                </button>
+                <button
+                  type="button"
+                  onClick={submitCheckoutMesa}
+                  className="flex-1 h-9 rounded-lg btn-gold text-xs font-bold transition-all"
+                >
+                  Cerrar Venta
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE TICKET PREVISUALIZADOR Y ACCIÓN DE IMPRESIÓN */}
+      {completedVenta && (
+        <div className="fixed inset-0 bg-black/85 flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="glass-card rounded-2xl p-6 border border-white/10 max-w-sm w-full relative shadow-2xl overflow-hidden">
+            {/* Top gold line */}
+            <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-amber-500 to-transparent"></div>
+            
+            <div className="text-center mb-4">
+              <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 mb-2">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">¡Cuenta Cerrada y Cobrada!</h3>
+              <p className="text-[10px] text-zinc-500 mt-0.5">Mesa: {lastCheckoutMesaNum} • Factura #{completedVenta.id}</p>
+            </div>
+
+            {/* Simulated 80mm ticket preview inside our premium UI */}
+            <div className="bg-white text-black p-4 rounded-xl font-mono text-[10.5px] border border-zinc-200 shadow-inner max-h-64 overflow-y-auto mb-4">
+              <div className="text-center font-bold mb-2">
+                <p className="text-xs tracking-wider">ALICO BAR</p>
+                <p className="text-[8px]">SERVICIOS DE BAR Y COCTELERÍA</p>
+                <p className="text-[7.5px] font-normal mt-0.5">Sede: {completedVenta.sede_id === 'sede-norte' ? 'Norte' : 'Centro'}</p>
+              </div>
+              <div className="border-t border-dashed border-black my-1"></div>
+              <p className="text-[9px]">Fecha: {new Date(completedVenta.fecha_hora).toLocaleString('es-CO')}</p>
+              <p className="text-[9px]">Atendió: {completedVenta.atendido_por}</p>
+              <p className="text-[9px]">Cliente: {completedVenta.cliente_nombre || 'Cliente General'}</p>
+              <p className="text-[9px]"><strong>Mesa:</strong> {lastCheckoutMesaNum}</p>
+              <div className="border-t border-dashed border-black my-1"></div>
+              <table className="w-full text-left border-collapse text-[9.5px]">
+                <thead>
+                  <tr className="border-b border-dashed border-black">
+                    <th>Detalle</th>
+                    <th className="text-right">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {completedVenta.items.map((item, idx) => (
+                    <tr key={idx}>
+                      <td>{item.cantidad}x {item.nombre}</td>
+                      <td className="text-right">${(item.precio_unitario * item.cantidad).toLocaleString('es-CO')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="border-t border-dashed border-black my-1"></div>
+              <div className="flex justify-between">
+                <span>Neto:</span>
+                <span>${(completedVenta.items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0)).toLocaleString('es-CO')}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>IPO (8%):</span>
+                <span>${(Math.round(completedVenta.items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0) * 0.08)).toLocaleString('es-CO')}</span>
+              </div>
+              <div className="border-t border-dashed border-black my-1"></div>
+              <div className="flex justify-between font-bold text-xs">
+                <span>TOTAL:</span>
+                <span>${completedVenta.total.toLocaleString('es-CO')}</span>
+              </div>
+              <p className="text-[8.5px] mt-1 font-bold">Pago: {completedVenta.metodo_pago}</p>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  printThermalReceipt(completedVenta, lastCheckoutMesaNum);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-black text-xs font-bold transition-all shadow-md shadow-amber-500/10 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.821V7.5a.75.75 0 01.75-.75h9a.75.75 0 01.75.75v6.321m-10.5 0h10.5m-10.5 0l-1.3-9.103a.75.75 0 01.737-.855h11.626a.75.75 0 01.737.855l-1.3 9.103m-10.5 0V18a1.5 1.5 0 001.5 1.5h7.5A1.5 1.5 0 0018 18v-4.179M9 15h6" />
+                </svg>
+                Imprimir Tiquete
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCompletedVenta(null);
+                  setLastCheckoutMesaNum('');
+                }}
+                className="py-2.5 px-4 rounded-xl bg-zinc-900 border border-white/5 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-semibold transition-all cursor-pointer"
+              >
+                Listo / Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
