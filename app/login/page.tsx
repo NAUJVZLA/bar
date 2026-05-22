@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
-  
+
   // Estados de Login tradicional (Avanzado)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -27,7 +27,7 @@ export default function LoginPage() {
 
     setTimeout(() => {
       const cleanEmail = email.toLowerCase().trim();
-      if ((cleanEmail === 'superadmin@alicobar.com' || cleanEmail === 'superadmin@alcobar.com') && password === 'admin123') {
+      if ((cleanEmail === 'superadmin@alicobar.com' || cleanEmail === 'superadmin@alcobar.com') && password === 'jccg2105') {
         const session = {
           email: cleanEmail,
           role: 'super_admin',
@@ -40,7 +40,7 @@ export default function LoginPage() {
         const session = {
           email: cleanEmail,
           role: 'admin',
-          nombre: 'Diana Administradora',
+          nombre: 'Administradora',
           timestamp: Date.now()
         };
         localStorage.setItem('alico_session', JSON.stringify(session));
@@ -143,7 +143,7 @@ export default function LoginPage() {
                 className="group relative text-left glass-card rounded-2xl p-6 border border-white/5 hover:border-emerald-500/30 bg-[#06060c]/50 hover:bg-[#07130e]/30 transition-all duration-300 shadow-xl hover:shadow-emerald-500/5 flex flex-col justify-between min-h-[190px] overflow-hidden"
               >
                 <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
-                
+
                 <div>
                   <div className="h-10 w-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4 group-hover:scale-110 transition-transform">
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
@@ -288,28 +288,25 @@ export default function LoginPage() {
       {/* Modern Glassmorphic Password Validation Modal */}
       {selectedProfileForPass && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
-          <div 
-            className={`glass-card border rounded-3xl p-6 md:p-8 w-full max-w-sm relative overflow-hidden bg-[#06060c]/95 text-center shadow-2xl transition-all duration-300 ${
-              selectedProfileForPass === 'admin' 
-                ? 'border-emerald-500/25 shadow-emerald-500/5' 
+          <div
+            className={`glass-card border rounded-3xl p-6 md:p-8 w-full max-w-sm relative overflow-hidden bg-[#06060c]/95 text-center shadow-2xl transition-all duration-300 ${selectedProfileForPass === 'admin'
+                ? 'border-emerald-500/25 shadow-emerald-500/5'
                 : 'border-amber-500/25 shadow-amber-500/5'
-            }`}
+              }`}
           >
             {/* Ambient Profile Glow */}
-            <div 
-              className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl opacity-20 pointer-events-none ${
-                selectedProfileForPass === 'admin' ? 'bg-emerald-500' : 'bg-amber-500'
-              }`}
+            <div
+              className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl opacity-20 pointer-events-none ${selectedProfileForPass === 'admin' ? 'bg-emerald-500' : 'bg-amber-500'
+                }`}
             ></div>
 
             {/* Profile Avatar Icon inside Modal */}
             <div className="flex justify-center mb-4">
-              <div 
-                className={`h-16 w-16 rounded-2xl flex items-center justify-center border shadow-lg transition-transform duration-300 scale-105 ${
-                  selectedProfileForPass === 'admin' 
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10' 
+              <div
+                className={`h-16 w-16 rounded-2xl flex items-center justify-center border shadow-lg transition-transform duration-300 scale-105 ${selectedProfileForPass === 'admin'
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10'
                     : 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-500/10'
-                }`}
+                  }`}
               >
                 {selectedProfileForPass === 'admin' ? (
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-8 h-8">
@@ -327,9 +324,8 @@ export default function LoginPage() {
             <h3 className="text-xl font-bold text-white mb-1">
               {selectedProfileForPass === 'admin' ? 'Diana Administradora' : 'Juan Carlos Caridad'}
             </h3>
-            <p className={`text-xs font-bold uppercase tracking-wider mb-6 ${
-              selectedProfileForPass === 'admin' ? 'text-emerald-400' : 'text-amber-400'
-            }`}>
+            <p className={`text-xs font-bold uppercase tracking-wider mb-6 ${selectedProfileForPass === 'admin' ? 'text-emerald-400' : 'text-amber-400'
+              }`}>
               {selectedProfileForPass === 'admin' ? 'Control de Sede (POS)' : 'Acceso Propietario'}
             </p>
 
@@ -363,9 +359,8 @@ export default function LoginPage() {
                     value={profilePassword}
                     onChange={(e) => setProfilePassword(e.target.value)}
                     placeholder="••••••••"
-                    className={`w-full h-10 pl-10 pr-10 rounded-xl glass-input text-xs text-white transition-all ${
-                      selectedProfileForPass === 'admin' ? 'focus:ring-emerald-500' : 'focus:ring-amber-500'
-                    }`}
+                    className={`w-full h-10 pl-10 pr-10 rounded-xl glass-input text-xs text-white transition-all ${selectedProfileForPass === 'admin' ? 'focus:ring-emerald-500' : 'focus:ring-amber-500'
+                      }`}
                   />
                   <button
                     type="button"
@@ -393,11 +388,10 @@ export default function LoginPage() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className={`w-full h-10 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-black/30 ${
-                    selectedProfileForPass === 'admin' 
-                      ? 'bg-emerald-500 hover:bg-emerald-600 text-black shadow-emerald-500/5' 
+                  className={`w-full h-10 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-black/30 ${selectedProfileForPass === 'admin'
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-black shadow-emerald-500/5'
                       : 'bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/5'
-                  }`}
+                    }`}
                 >
                   {isLoading ? (
                     <>
@@ -413,7 +407,7 @@ export default function LoginPage() {
                     </>
                   )}
                 </button>
-                
+
                 <button
                   type="button"
                   disabled={isLoading}

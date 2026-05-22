@@ -18,7 +18,7 @@ export default function SuperAdminPage() {
   // Formulario nuevo Admin
   const [adminEmail, setAdminEmail] = useState('');
   const [adminNombre, setAdminNombre] = useState('');
-  const [adminPassword, setAdminPassword] = useState('admin123');
+  const [adminPassword, setAdminPassword] = useState('jccg2105');
 
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -89,7 +89,7 @@ export default function SuperAdminPage() {
       setNombreSede('');
       setDireccionSede('');
       loadData();
-      
+
       // Emitir cambio de sede global por seguridad
       window.dispatchEvent(new Event('sedeChanged'));
     } catch (err) {
@@ -111,7 +111,7 @@ export default function SuperAdminPage() {
     setSuccessMsg(`¡Admin "${adminNombre}" creado en el sistema! Se le ha asignado acceso a las sedes.`);
     setAdminEmail('');
     setAdminNombre('');
-    setAdminPassword('admin123');
+    setAdminPassword('jccg2105');
   };
 
   // 3. INYECTOR SIMULADO DE VENTAS PARA AUDITORÍA
@@ -142,7 +142,7 @@ export default function SuperAdminPage() {
 
     setSuccessMsg(`¡Inyectada Venta simulada de $${monto.toLocaleString('es-CO')} en "${randomSede.nombre}"!`);
     loadData();
-    
+
     // Disparar sincronización
     window.dispatchEvent(new Event('sedeChanged'));
   };
@@ -154,7 +154,7 @@ export default function SuperAdminPage() {
   return (
     <div className="min-h-screen bg-[#020205] text-zinc-100 p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        
+
         {/* Top Header Panel */}
         <header className="glass-panel border border-white/5 rounded-2xl p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-amber-500/20 via-amber-500/40 to-transparent"></div>
@@ -229,16 +229,16 @@ export default function SuperAdminPage() {
 
         {/* Formularios y Listado de Sedes */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
+
           {/* Lado Izquierdo (2 spans): Sedes e Historial Consolidadas */}
           <div className="lg:col-span-2 space-y-6">
-            
+
             {/* Listado de Sedes */}
             <div className="glass-card rounded-2xl p-5 border border-white/5">
               <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-4">
                 Sedes y Sucursales en Operación
               </h3>
-              
+
               <div className="space-y-3">
                 {sedes.map((s) => {
                   const ventasSede = ventas.filter(v => v.sede_id === s.id);
@@ -290,7 +290,7 @@ export default function SuperAdminPage() {
               <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-4">
                 Historial de Transacciones Globales
               </h3>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
@@ -339,13 +339,13 @@ export default function SuperAdminPage() {
 
           {/* Lado Derecho (1 span): Formularios de Creación */}
           <div className="lg:col-span-1 space-y-6">
-            
+
             {/* Formulario Crear Sede */}
             <div className="glass-card rounded-2xl p-5 border border-white/5">
               <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-4">
                 Provisionar Sede (Local)
               </h3>
-              
+
               <form onSubmit={handleCreateSede} className="space-y-4">
                 <div>
                   <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
@@ -389,7 +389,7 @@ export default function SuperAdminPage() {
               <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-4">
                 Crear Cliente / Administrador
               </h3>
-              
+
               <form onSubmit={handleCreateAdmin} className="space-y-4">
                 <div>
                   <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
