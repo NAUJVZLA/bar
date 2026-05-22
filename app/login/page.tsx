@@ -5,19 +5,26 @@ import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const router = useRouter();
+  
+  // Estados de Login tradicional (Avanzado)
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [loginType, setLoginType] = useState<'admin' | 'super' | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
+  // Estados de Login por Perfil + Seguridad
+  const [selectedProfileForPass, setSelectedProfileForPass] = useState<'admin' | 'super' | null>(null);
+  const [profilePassword, setProfilePassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passError, setPassError] = useState('');
+
+  // Enviar Login Tradicional
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simular retraso de red
     setTimeout(() => {
       const cleanEmail = email.toLowerCase().trim();
       if ((cleanEmail === 'superadmin@alicobar.com' || cleanEmail === 'superadmin@alcobar.com') && password === 'admin123') {
@@ -40,40 +47,54 @@ export default function LoginPage() {
         localStorage.setItem('alico_active_sede', 'sede-norte');
         router.push('/dashboard');
       } else {
-        setError('Credenciales incorrectas. Intenta con el ingreso directo de perfiles.');
+        setError('Credenciales incorrectas. Intenta de nuevo.');
         setIsLoading(false);
       }
     }, 800);
   };
 
-  const handleProfileLogin = (type: 'admin' | 'super') => {
-    setLoginType(type);
+  // Enviar Clave de Perfil Seleccionado
+  const handleProfilePassSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassError('');
     setIsLoading(true);
-    setError('');
 
     setTimeout(() => {
-      if (type === 'super') {
-        const session = {
-          email: 'superadmin@alcobar.com',
-          role: 'super_admin',
-          nombre: 'Juan Carlos Caridad',
-          timestamp: Date.now()
-        };
-        localStorage.setItem('alico_session', JSON.stringify(session));
-        router.push('/super-admin');
+      if (profilePassword === 'admin123') {
+        if (selectedProfileForPass === 'super') {
+          const session = {
+            email: 'superadmin@alcobar.com',
+            role: 'super_admin',
+            nombre: 'Juan Carlos Caridad',
+            timestamp: Date.now()
+          };
+          localStorage.setItem('alico_session', JSON.stringify(session));
+          router.push('/super-admin');
+        } else {
+          const session = {
+            email: 'admin@alcobar.com',
+            role: 'admin',
+            nombre: 'Diana Administradora',
+            timestamp: Date.now()
+          };
+          localStorage.setItem('alico_session', JSON.stringify(session));
+          localStorage.setItem('alico_active_sede', 'sede-norte');
+          router.push('/dashboard');
+        }
       } else {
-        const session = {
-          email: 'admin@alcobar.com',
-          role: 'admin',
-          nombre: 'Diana Administradora',
-          timestamp: Date.now()
-        };
-        localStorage.setItem('alico_session', JSON.stringify(session));
-        // Sede por defecto
-        localStorage.setItem('alico_active_sede', 'sede-norte');
-        router.push('/dashboard');
+        setPassError('Contraseña incorrecta. Inténtalo de nuevo.');
+        setIsLoading(false);
       }
-    }, 500);
+    }, 600);
+  };
+
+  // Resetear estados del modal
+  const handleCloseModal = () => {
+    setSelectedProfileForPass(null);
+    setProfilePassword('');
+    setPassError('');
+    setShowPassword(false);
+    setIsLoading(false);
   };
 
   return (
@@ -113,7 +134,12 @@ export default function LoginPage() {
               <button
                 type="button"
                 disabled={isLoading}
-                onClick={() => handleProfileLogin('admin')}
+                onClick={() => {
+                  setSelectedProfileForPass('admin');
+                  setProfilePassword('');
+                  setPassError('');
+                  setShowPassword(false);
+                }}
                 className="group relative text-left glass-card rounded-2xl p-6 border border-white/5 hover:border-emerald-500/30 bg-[#06060c]/50 hover:bg-[#07130e]/30 transition-all duration-300 shadow-xl hover:shadow-emerald-500/5 flex flex-col justify-between min-h-[190px] overflow-hidden"
               >
                 <div className="absolute -top-10 -right-10 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all"></div>
@@ -143,7 +169,12 @@ export default function LoginPage() {
               <button
                 type="button"
                 disabled={isLoading}
-                onClick={() => handleProfileLogin('super')}
+                onClick={() => {
+                  setSelectedProfileForPass('super');
+                  setProfilePassword('');
+                  setPassError('');
+                  setShowPassword(false);
+                }}
                 className="group relative text-left glass-card rounded-2xl p-6 border border-white/5 hover:border-amber-500/30 bg-[#06060c]/50 hover:bg-[#140f06]/30 transition-all duration-300 shadow-xl hover:shadow-amber-500/5 flex flex-col justify-between min-h-[190px] overflow-hidden"
               >
                 <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all"></div>
@@ -169,14 +200,6 @@ export default function LoginPage() {
                 </div>
               </button>
             </div>
-
-            {/* Spinner Overlay */}
-            {isLoading && (
-              <div className="flex justify-center items-center py-4 gap-2.5 text-xs text-zinc-400 font-semibold">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-amber-500/20 border-t-amber-500"></div>
-                <span>Autenticando perfil en el sistema...</span>
-              </div>
-            )}
           </div>
         ) : (
           /* Advanced Login View (Traditional Form) */
@@ -261,6 +284,150 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
+      {/* Modern Glassmorphic Password Validation Modal */}
+      {selectedProfileForPass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
+          <div 
+            className={`glass-card border rounded-3xl p-6 md:p-8 w-full max-w-sm relative overflow-hidden bg-[#06060c]/95 text-center shadow-2xl transition-all duration-300 ${
+              selectedProfileForPass === 'admin' 
+                ? 'border-emerald-500/25 shadow-emerald-500/5' 
+                : 'border-amber-500/25 shadow-amber-500/5'
+            }`}
+          >
+            {/* Ambient Profile Glow */}
+            <div 
+              className={`absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl opacity-20 pointer-events-none ${
+                selectedProfileForPass === 'admin' ? 'bg-emerald-500' : 'bg-amber-500'
+              }`}
+            ></div>
+
+            {/* Profile Avatar Icon inside Modal */}
+            <div className="flex justify-center mb-4">
+              <div 
+                className={`h-16 w-16 rounded-2xl flex items-center justify-center border shadow-lg transition-transform duration-300 scale-105 ${
+                  selectedProfileForPass === 'admin' 
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10' 
+                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-500/10'
+                }`}
+              >
+                {selectedProfileForPass === 'admin' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-8 h-8">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-8 h-8">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  </svg>
+                )}
+              </div>
+            </div>
+
+            {/* Profile Info */}
+            <h3 className="text-xl font-bold text-white mb-1">
+              {selectedProfileForPass === 'admin' ? 'Diana Administradora' : 'Juan Carlos Caridad'}
+            </h3>
+            <p className={`text-xs font-bold uppercase tracking-wider mb-6 ${
+              selectedProfileForPass === 'admin' ? 'text-emerald-400' : 'text-amber-400'
+            }`}>
+              {selectedProfileForPass === 'admin' ? 'Control de Sede (POS)' : 'Acceso Propietario'}
+            </p>
+
+            {/* Error Message */}
+            {passError && (
+              <div className="mb-4 p-2.5 rounded-xl bg-red-950/40 border border-red-500/20 text-red-300 text-xs font-semibold flex items-center justify-center gap-1.5 animate-pulse">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-red-400 flex-shrink-0">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v4.5a.75.75 0 01-1.5 0v-4.5A.75.75 0 0110 5zm0 10a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <span>{passError}</span>
+              </div>
+            )}
+
+            {/* Verification Form */}
+            <form onSubmit={handleProfilePassSubmit} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-left mb-1.5 pl-1">
+                  Introduce tu Contraseña
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-3 text-zinc-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                      <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                    </svg>
+                  </span>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    autoFocus
+                    required
+                    disabled={isLoading}
+                    value={profilePassword}
+                    onChange={(e) => setProfilePassword(e.target.value)}
+                    placeholder="••••••••"
+                    className={`w-full h-10 pl-10 pr-10 rounded-xl glass-input text-xs text-white transition-all ${
+                      selectedProfileForPass === 'admin' ? 'focus:ring-emerald-500' : 'focus:ring-amber-500'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-3 text-zinc-500 hover:text-zinc-300"
+                  >
+                    {showPassword ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                        <path d="M10 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+                        <path fillRule="evenodd" d="M.664 9.576a13.91 13.91 0 0118.673 0 .75.75 0 010 1.148 13.91 13.91 0 01-18.673 0 .75.75 0 010-1.148zM2.086 10a12.41 12.41 0 0015.828 0 12.41 12.41 0 00-15.828 0z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                        <path fillRule="evenodd" d="M3.28 2.22a.75.75 0 00-1.06 1.06l14.5 14.5a.75.75 0 101.06-1.06l-1.745-1.745a10.029 10.029 0 003.3-4.38.75.75 0 000-.596 11.963 11.963 0 00-18.82 0 .75.75 0 000 .596 9.99 9.99 0 003.3 4.38L3.28 2.22zM8.49 5.867L10.37 7.75a2.5 2.5 0 013.38 3.38l1.884 1.883a4 4 0 00-5.143-5.143L8.49 5.867z" clipRule="evenodd" />
+                        <path d="M12.49 14.61l-1.545-1.546a2.5 2.5 0 01-3.38-3.38L6.017 8.136a4 4 0 005.143 5.143L12.49 14.61z" />
+                        <path d="M17.16 15.039L2.84 2.84" stroke="currentColor" strokeWidth="1.5" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-2.5 pt-3">
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className={`w-full h-10 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-black/30 ${
+                    selectedProfileForPass === 'admin' 
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-black shadow-emerald-500/5' 
+                      : 'bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/5'
+                  }`}
+                >
+                  {isLoading ? (
+                    <>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-black/20 border-t-black"></div>
+                      <span>Verificando Clave...</span>
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 10.5V6.75a4.5 4.5 0 119 0v3.75M3.75 21.75h16.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H3.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                      </svg>
+                      <span>Validar y Entrar</span>
+                    </>
+                  )}
+                </button>
+                
+                <button
+                  type="button"
+                  disabled={isLoading}
+                  onClick={handleCloseModal}
+                  className="w-full h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-300 hover:text-white text-xs font-bold transition-all"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
