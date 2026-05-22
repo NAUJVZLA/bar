@@ -168,7 +168,7 @@ export default function SuperAdminPage() {
               </span>
             </div>
             <h1 className="text-2xl font-black text-white mt-1.5 font-sans">
-              Alico Bar POS • Super Administrador
+              ALCO Gastro Bar • Super Administrador
             </h1>
             <p className="text-xs text-zinc-400 mt-0.5">
               Bienvenido creador: <span className="text-amber-500 font-semibold">{userName}</span>

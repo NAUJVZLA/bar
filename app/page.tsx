@@ -35,7 +35,7 @@ export default function RootPage() {
         {/* Sleek Golden Spinner */}
         <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#f59e0b]/20 border-t-[#f59e0b]"></div>
         <p className="text-sm font-medium tracking-wide text-zinc-400">
-          Iniciando Alico Bar...
+          Iniciando ALCO Gastro Bar...
         </p>
       </div>
     </div>

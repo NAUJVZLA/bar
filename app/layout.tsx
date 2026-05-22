@@ -13,10 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alico Bar POS - Licorera & Mini Bar Multisede",
-  description: "El sistema POS definitivo para licoreras y bares. Gestión de inventarios, mapa de mesas interactivas y ventas en barra en tiempo real.",
-  keywords: "POS, Bar, Licorera, Inventario, Mesas, Ventas, Restaurante, Admin",
-  authors: [{ name: "Alico Bar Tech" }],
+  title: "ALCO Servicio Gastro Bar - POS Multisede",
+  description: "El sistema POS definitivo para ALCO Servicio Gastro Bar. Gestión de inventarios, mapa de mesas interactivas y ventas en barra en tiempo real.",
+  keywords: "POS, Bar, Gastro Bar, Inventario, Mesas, Ventas, Restaurante, Admin, ALCO",
+  authors: [{ name: "ALCO Tech" }],
 };
 
 export default function RootLayout({

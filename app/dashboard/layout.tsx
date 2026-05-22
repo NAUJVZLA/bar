@@ -116,7 +116,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = [
     {
-      nombre: 'Resumen Geral',
+      nombre: 'Resumen General',
       path: '/dashboard',
       icon: (
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
@@ -159,6 +159,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879-.659c1.546-1.16 3.696-1.16 5.242 0l.879.659M8.25 9.75h7.5m-7.5 3h7.5M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
         </svg>
       )
+    },
+    {
+      nombre: 'Cierre de Caja',
+      path: '/dashboard/cierre',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+        </svg>
+      )
     }
   ];
 
@@ -174,7 +183,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="text-sm font-bold text-black">A</span>
             </div>
             <div>
-              <span className="text-md font-bold tracking-wider text-white">ALICO BAR POS</span>
+              <span className="text-md font-bold tracking-wider text-white">ALCO GASTRO BAR</span>
               <p className="text-[9px] text-zinc-500 font-semibold tracking-widest uppercase text-left">Admin Room</p>
               
               <div className="flex items-center gap-1.5 mt-1">
@@ -272,7 +281,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               A
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs font-bold tracking-wider text-white">ALICO BAR POS</span>
+              <span className="text-xs font-bold tracking-wider text-white">ALCO GASTRO BAR</span>
               <span 
                 className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'demo' ? 'bg-amber-400 animate-pulse' : syncStatus === 'syncing' ? 'bg-blue-400 animate-pulse' : 'bg-emerald-400'}`} 
                 title={syncStatus === 'demo' ? 'Modo Demo (Local)' : syncStatus === 'syncing' ? 'Sincronizando...' : 'Producción Cloud Sincronizado'}

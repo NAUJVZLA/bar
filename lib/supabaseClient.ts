@@ -115,6 +115,23 @@ export interface PrestamoBotella {
   notas?: string;
 }
 
+export interface CierreCaja {
+  id: string;
+  sede_id: string;
+  fecha_hora: string;
+  monto_apertura: number;
+  ventas_efectivo: number;
+  ventas_tarjeta: number;
+  ventas_transferencia: number;
+  ventas_credito: number;
+  ventas_total: number;
+  monto_real: number;
+  descuadre: number;
+  registrado_por: string;
+  notas?: string;
+  ventas_count: number;
+}
+
 // ==========================================
 // MOCK STATE INITIAL DATA
 // ==========================================
@@ -716,5 +733,20 @@ export const mockDb = {
       return prestamo;
     }
     return null;
+  },
+  getCierres: (sedeId?: string): CierreCaja[] => {
+    const cierres = getLocalStorage<CierreCaja[]>('alico_cierres', []);
+    return /^\s*$/.test(sedeId || '') ? cierres : cierres.filter(c => c.sede_id === sedeId);
+  },
+  registrarCierre: (cierre: Omit<CierreCaja, 'id' | 'fecha_hora'>): CierreCaja => {
+    const cierres = getLocalStorage<CierreCaja[]>('alico_cierres', []);
+    const newCierre: CierreCaja = {
+      id: 'cierre-' + Date.now(),
+      fecha_hora: new Date().toISOString(),
+      ...cierre
+    };
+    cierres.unshift(newCierre);
+    setLocalStorage('alico_cierres', cierres);
+    return newCierre;
   }
 };

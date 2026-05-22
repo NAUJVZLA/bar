@@ -62,7 +62,7 @@ export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
       <body style="margin: 0; padding: 0; background-color: #f3f4f6;">
         <!-- Barra superior premium para control en pantalla -->
         <div class="no-print" style="position: sticky; top: 0; left: 0; right: 0; background: #1e1e1e; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #374151; margin-bottom: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-          <span style="color: #f3f4f6; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">📄 Alico Bar POS - Vista de Impresión</span>
+          <span style="color: #f3f4f6; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;">📄 ALCO Gastro Bar - Vista de Impresión</span>
           <div style="display: flex; gap: 8px;">
             <button onclick="window.print()" style="background: linear-gradient(135deg, #059669, #10b981); color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
               Imprimir
@@ -76,8 +76,8 @@ export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
         <!-- Contenedor del ticket centrado en pantalla, directo en impresión -->
         <div class="ticket-container" style="max-width: 80mm; margin: 0 auto 30px auto; background: white; padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-radius: 4px; box-sizing: border-box;">
           <div class="text-center">
-            <h2 style="margin: 0; font-size: 14px; font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: 1px;">ALICO BAR</h2>
-          <p style="margin: 3px 0; font-size: 9px; font-weight: bold;">SERVICIOS DE BAR Y COCTELERÍA</p>
+            <h2 style="margin: 0; font-size: 14px; font-family: 'Courier New', monospace; font-weight: bold; letter-spacing: 1px;">ALCO BAR</h2>
+          <p style="margin: 3px 0; font-size: 9px; font-weight: bold;">SERVICIO GASTRO BAR Y COCTELERÍA</p>
           <p style="margin: 2px 0; font-size: 8px;">Sede: ${venta.sede_id === 'sede-norte' ? 'Norte - Av. Principal #102' : 'Centro - Calle 15 #5-40'}</p>
         </div>
         
@@ -126,7 +126,7 @@ export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
         
         <div class="footer" style="font-family: 'Courier New', monospace;">
           <p style="margin: 0; font-weight: bold; font-size: 10px;">¡GRACIAS POR SU COMPRA!</p>
-          <p style="margin: 3px 0 0 0; font-size: 7.5px;">Alico Bar POS • Control y Auditoría de Bodega</p>
+          <p style="margin: 3px 0 0 0; font-size: 7.5px;">ALCO Gastro Bar POS • Control y Auditoría de Bodega</p>
         </div>
         </div>
         <!-- Script de impresión y auto-cierre -->
