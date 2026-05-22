@@ -3,8 +3,8 @@ import { Venta } from '@/lib/supabaseClient';
 export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
   if (typeof window === 'undefined') return;
 
-  // Abrir una nueva ventana/pestaña premium para mostrar el ticket
-  const printWindow = window.open('', '_blank', 'width=450,height=700,menubar=no,toolbar=no,location=no,status=no');
+  // Abrir una nueva pestaña limpia de forma independiente para mostrar el ticket completo y sin bloqueos
+  const printWindow = window.open('', '_blank');
   if (!printWindow) {
     alert('Por favor, permita las ventanas emergentes (popups) para poder visualizar e imprimir el ticket de venta.');
     return;
@@ -68,7 +68,7 @@ export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
               Imprimir
             </button>
             <button onclick="window.close()" style="background: #374151; color: #d1d5db; border: 1px solid #4b5563; padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
-              Cerrar
+              Cerrar Vista Previa
             </button>
           </div>
         </div>
@@ -129,18 +129,13 @@ export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
           <p style="margin: 3px 0 0 0; font-size: 7.5px;">ALCO Gastro Bar POS • Control y Auditoría de Bodega</p>
         </div>
         </div>
-        <!-- Script de impresión y auto-cierre -->
+        <!-- Script de impresión sin auto-cierre inmediato para permitir inspeccionar la vista previa -->
         <script>
           window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
               window.focus();
               window.print();
-              
-              // Cerrar automáticamente después de imprimir o cancelar
-              window.onafterprint = () => {
-                window.close();
-              };
-            }, 300);
+            }, 400);
           });
         </script>
       </body>

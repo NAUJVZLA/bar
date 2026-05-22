@@ -6,7 +6,7 @@ import { mockDb, Venta, CierreCaja } from '@/lib/supabaseClient';
 export default function CierreCajaPage() {
   const [activeSedeId, setActiveSedeId] = useState('');
   const [activeSedeNombre, setActiveSedeNombre] = useState('');
-  const [cajeroName, setCajeroName] = useState('Diana Administradora');
+  const [cajeroName, setCajeroName] = useState('Administradora');
   const [ventasSede, setVentasSede] = useState<Venta[]>([]);
   const [historicoCierres, setHistoricoCierres] = useState<CierreCaja[]>([]);
 
@@ -34,7 +34,7 @@ export default function CierreCajaPage() {
       try {
         const session = JSON.parse(sessionStr);
         setCajeroName(session.nombre || 'Diana Administradora');
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // Cargar cierres históricos
@@ -43,7 +43,7 @@ export default function CierreCajaPage() {
 
     // Cargar ventas de la sede
     const todasLasVentas = mockDb.getVentas(currentSedeId);
-    
+
     // FILTRAR VENTAS ACTIVAS: Solo aquellas hechas después del último cierre
     if (cierres.length > 0) {
       const ultimoCierreFecha = new Date(cierres[0].fecha_hora);
@@ -78,7 +78,7 @@ export default function CierreCajaPage() {
 
   // Efectivo Esperado en Caja = Base de Apertura + Ventas en Efectivo
   const efectivoEsperado = baseApertura + ventasEfectivo;
-  
+
   // Calcular Descuadre en base al efectivo real digitado
   const efectivoRealNum = parseFloat(efectivoReal) || 0;
   const descuadre = efectivoReal === '' ? 0 : efectivoRealNum - efectivoEsperado;
@@ -114,10 +114,10 @@ export default function CierreCajaPage() {
     setEfectivoReal('');
     setNotas('');
     setSelectedCierreImprimir(nuevoCierre);
-    
+
     // Recargar datos para que las ventas del turno vuelvan a cero
     loadCierreData();
-    
+
     // Disparar evento para alertar
     window.dispatchEvent(new Event('sedeChanged'));
   };
@@ -126,7 +126,7 @@ export default function CierreCajaPage() {
   const printCierreReceipt = (cierre: CierreCaja) => {
     if (typeof window === 'undefined') return;
 
-    const printWindow = window.open('', '_blank', 'width=450,height=700');
+    const printWindow = window.open('', '_blank');
     if (!printWindow) {
       alert('Habilita los popups para imprimir.');
       return;
@@ -155,7 +155,10 @@ export default function CierreCajaPage() {
         <body>
           <div class="no-print" style="background: #1e1e1e; color: #fff; padding: 8px 12px; display: flex; justify-content: space-between; align-items: center; font-family: sans-serif; font-size: 12px; margin-bottom: 15px; border-radius: 4px;">
             <span>📄 Comprobante de Cierre</span>
-            <button onclick="window.print(); window.close();" style="background: #e2a82b; border: none; padding: 4px 10px; font-weight: bold; border-radius: 3px; cursor: pointer; color: black;">Imprimir</button>
+            <div style="display: flex; gap: 8px;">
+              <button onclick="window.print()" style="background: #e2a82b; border: none; padding: 4px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; color: black;">Imprimir</button>
+              <button onclick="window.close()" style="background: #374151; color: #d1d5db; border: 1px solid #4b5563; padding: 4px 12px; border-radius: 4px; font-size: 11px; cursor: pointer;">Cerrar Vista Previa</button>
+            </div>
           </div>
 
           <div class="text-center">
@@ -220,7 +223,7 @@ export default function CierreCajaPage() {
               setTimeout(() => {
                 window.focus();
                 window.print();
-              }, 300);
+              }, 400);
             });
           </script>
         </body>
@@ -249,14 +252,14 @@ export default function CierreCajaPage() {
 
       {/* Grid Central */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Columna Izquierda (2 spans): Resumen del Turno & Formulario de Cierre */}
         <div className="lg:col-span-2 space-y-6">
-          
+
           {/* Tarjeta de Resumen del Turno Activo */}
           <div className="glass-card rounded-2xl p-6 border border-white/5 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl pointer-events-none"></div>
-            
+
             <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-5 flex items-center justify-between">
               <span>Auditoría del Turno Activo</span>
               <span className="text-[10px] text-zinc-500 normal-case font-semibold">
@@ -269,7 +272,7 @@ export default function CierreCajaPage() {
                 <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Ventas Efectivo 💵</p>
                 <p className="text-lg font-black text-white mt-1">${ventasEfectivo.toLocaleString('es-CO')}</p>
               </div>
-              
+
               <div className="p-4 bg-black/40 rounded-xl border border-white/5 text-center">
                 <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-wider">Ventas Tarjeta 💳</p>
                 <p className="text-lg font-black text-white mt-1">${ventasTarjeta.toLocaleString('es-CO')}</p>
@@ -306,7 +309,7 @@ export default function CierreCajaPage() {
 
             <form onSubmit={handlePerformCierre} className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                
+
                 {/* Base de Apertura */}
                 <div>
                   <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-widest mb-2">
@@ -371,19 +374,18 @@ export default function CierreCajaPage() {
 
                 {/* Resultado del Descuadre */}
                 {efectivoReal !== '' && (
-                  <div className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all ${
-                    descuadre === 0 
-                      ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400' 
-                      : descuadre < 0 
-                        ? 'bg-red-500/10 border-red-500/25 text-red-400' 
-                        : 'bg-blue-500/10 border-blue-500/25 text-blue-400'
-                  }`}>
+                  <div className={`p-3.5 rounded-xl border flex items-center justify-between text-xs font-bold transition-all ${descuadre === 0
+                    ? 'bg-emerald-500/10 border-emerald-500/25 text-emerald-400'
+                    : descuadre < 0
+                      ? 'bg-red-500/10 border-red-500/25 text-red-400'
+                      : 'bg-blue-500/10 border-blue-500/25 text-blue-400'
+                    }`}>
                     <span>Diferencia (Descuadre):</span>
                     <span>
-                      {descuadre === 0 
-                        ? '¡Perfecto! Caja Cuadrada ($0)' 
-                        : descuadre < 0 
-                          ? `Faltante: -$${Math.abs(descuadre).toLocaleString('es-CO')}` 
+                      {descuadre === 0
+                        ? '¡Perfecto! Caja Cuadrada ($0)'
+                        : descuadre < 0
+                          ? `Faltante: -$${Math.abs(descuadre).toLocaleString('es-CO')}`
                           : `Sobrante: +$${descuadre.toLocaleString('es-CO')}`}
                     </span>
                   </div>
@@ -421,7 +423,7 @@ export default function CierreCajaPage() {
 
         {/* Columna Derecha (1 span): Historial de Cierres Pasados */}
         <div className="lg:col-span-1 space-y-6">
-          
+
           {/* Último Cierre Generado (Acceso Rápido para Imprimir) */}
           {selectedCierreImprimir && (
             <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/25 space-y-3.5 animate-fade-in">
@@ -473,7 +475,7 @@ export default function CierreCajaPage() {
                 {historicoCierres.map((c) => {
                   const fecha = new Date(c.fecha_hora);
                   const fechaStr = fecha.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' }) + ' ' + fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-                  
+
                   return (
                     <div
                       key={c.id}
@@ -484,17 +486,16 @@ export default function CierreCajaPage() {
                           <p className="text-[11px] font-bold text-white font-mono">{fechaStr}</p>
                           <p className="text-[9px] text-zinc-500 font-semibold mt-0.5">Por: {c.registrado_por}</p>
                         </div>
-                        <span className={`text-[10px] font-black px-2 py-0.5 rounded ${
-                          c.descuadre === 0 
-                            ? 'bg-emerald-950/20 text-emerald-400 border border-emerald-500/10' 
-                            : c.descuadre < 0 
-                              ? 'bg-red-950/20 text-red-400 border border-red-500/10' 
-                              : 'bg-blue-950/20 text-blue-400 border border-blue-500/10'
-                        }`}>
-                          {c.descuadre === 0 
-                            ? 'Cuadrado' 
-                            : c.descuadre < 0 
-                              ? `-$${Math.abs(c.descuadre).toLocaleString('es-CO')}` 
+                        <span className={`text-[10px] font-black px-2 py-0.5 rounded ${c.descuadre === 0
+                          ? 'bg-emerald-950/20 text-emerald-400 border border-emerald-500/10'
+                          : c.descuadre < 0
+                            ? 'bg-red-950/20 text-red-400 border border-red-500/10'
+                            : 'bg-blue-950/20 text-blue-400 border border-blue-500/10'
+                          }`}>
+                          {c.descuadre === 0
+                            ? 'Cuadrado'
+                            : c.descuadre < 0
+                              ? `-$${Math.abs(c.descuadre).toLocaleString('es-CO')}`
                               : `+$${c.descuadre.toLocaleString('es-CO')}`}
                         </span>
                       </div>
