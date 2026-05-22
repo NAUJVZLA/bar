@@ -6,7 +6,7 @@ import { mockDb, Venta, CierreCaja } from '@/lib/supabaseClient';
 export default function CierreCajaPage() {
   const [activeSedeId, setActiveSedeId] = useState('');
   const [activeSedeNombre, setActiveSedeNombre] = useState('');
-  const [cajeroName, setCajeroName] = useState('Administradora');
+  const [cajeroName, setCajeroName] = useState('Administrador');
   const [ventasSede, setVentasSede] = useState<Venta[]>([]);
   const [historicoCierres, setHistoricoCierres] = useState<CierreCaja[]>([]);
 
@@ -33,7 +33,7 @@ export default function CierreCajaPage() {
     if (sessionStr) {
       try {
         const session = JSON.parse(sessionStr);
-        setCajeroName(session.nombre || 'Diana Administradora');
+        setCajeroName(session.nombre || 'Administrador');
       } catch (e) { }
     }
 

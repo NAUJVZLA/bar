@@ -40,7 +40,7 @@ export default function LoginPage() {
         const session = {
           email: cleanEmail,
           role: 'admin',
-          nombre: 'Administradora',
+          nombre: 'Administrador',
           timestamp: Date.now()
         };
         localStorage.setItem('alico_session', JSON.stringify(session));
@@ -60,7 +60,8 @@ export default function LoginPage() {
     setIsLoading(true);
 
     setTimeout(() => {
-      if (profilePassword === 'admin123') {
+      const expectedPassword = selectedProfileForPass === 'super' ? 'jccg2105' : 'admin123';
+      if (profilePassword === expectedPassword) {
         if (selectedProfileForPass === 'super') {
           const session = {
             email: 'superadmin@alcobar.com',
@@ -74,7 +75,7 @@ export default function LoginPage() {
           const session = {
             email: 'admin@alcobar.com',
             role: 'admin',
-            nombre: 'Diana Administradora',
+            nombre: 'Administrador',
             timestamp: Date.now()
           };
           localStorage.setItem('alico_session', JSON.stringify(session));
@@ -150,7 +151,7 @@ export default function LoginPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">Diana Administradora</h3>
+                  <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors">Administrador</h3>
                   <p className="text-xs text-zinc-500 font-semibold mt-0.5">Gerente de Sede (POS & Mesas)</p>
                   <p className="text-xs text-zinc-400 mt-2 line-clamp-2">
                     Acceso directo a la terminal de ventas en barra, mapa interactivo de comandas, inventario Kárdex y cartera.
@@ -290,8 +291,8 @@ export default function LoginPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
           <div
             className={`glass-card border rounded-3xl p-6 md:p-8 w-full max-w-sm relative overflow-hidden bg-[#06060c]/95 text-center shadow-2xl transition-all duration-300 ${selectedProfileForPass === 'admin'
-                ? 'border-emerald-500/25 shadow-emerald-500/5'
-                : 'border-amber-500/25 shadow-amber-500/5'
+              ? 'border-emerald-500/25 shadow-emerald-500/5'
+              : 'border-amber-500/25 shadow-amber-500/5'
               }`}
           >
             {/* Ambient Profile Glow */}
@@ -304,8 +305,8 @@ export default function LoginPage() {
             <div className="flex justify-center mb-4">
               <div
                 className={`h-16 w-16 rounded-2xl flex items-center justify-center border shadow-lg transition-transform duration-300 scale-105 ${selectedProfileForPass === 'admin'
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10'
-                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-500/10'
+                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10'
+                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20 shadow-amber-500/10'
                   }`}
               >
                 {selectedProfileForPass === 'admin' ? (
@@ -322,7 +323,7 @@ export default function LoginPage() {
 
             {/* Profile Info */}
             <h3 className="text-xl font-bold text-white mb-1">
-              {selectedProfileForPass === 'admin' ? 'Diana Administradora' : 'Juan Carlos Caridad'}
+              {selectedProfileForPass === 'admin' ? 'Administrador' : 'Juan Carlos Caridad'}
             </h3>
             <p className={`text-xs font-bold uppercase tracking-wider mb-6 ${selectedProfileForPass === 'admin' ? 'text-emerald-400' : 'text-amber-400'
               }`}>
@@ -389,8 +390,8 @@ export default function LoginPage() {
                   type="submit"
                   disabled={isLoading}
                   className={`w-full h-10 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-black/30 ${selectedProfileForPass === 'admin'
-                      ? 'bg-emerald-500 hover:bg-emerald-600 text-black shadow-emerald-500/5'
-                      : 'bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/5'
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-black shadow-emerald-500/5'
+                    : 'bg-amber-500 hover:bg-amber-600 text-black shadow-amber-500/5'
                     }`}
                 >
                   {isLoading ? (

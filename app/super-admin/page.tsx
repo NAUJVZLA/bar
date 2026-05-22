@@ -266,7 +266,7 @@ export default function SuperAdminPage() {
                             const mockAdminSession = {
                               email: 'admin@alicobar.com',
                               role: 'admin',
-                              nombre: 'Diana Administradora',
+                              nombre: 'Administrador',
                               timestamp: Date.now()
                             };
                             localStorage.setItem('alico_session', JSON.stringify(mockAdminSession));
