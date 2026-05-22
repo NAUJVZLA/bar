@@ -98,3 +98,4 @@ Cuando estés listo para conectar Dionisio POS a una base de datos real en la nu
 - **Estética Bar/Nightlife first:** Interfaz oscura refinada en tonos Slate, Zinc y fondos puros `#030303` combinados con acentos ámbar/oro (`#f59e0b`) simulando licores finos.
 - **Glassmorphism:** Tarjetas y paneles semi-transparentes con desenfoques fluidos (`backdrop-filter`) que le otorgan un aspecto de cristal esmerilado de alta gama.
 - **Micro-interacciones:** Bordes iluminados animados, efectos hover suaves y transiciones optimizadas para pantallas táctiles de 120Hz.
+# bar
