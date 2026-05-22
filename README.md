@@ -70,8 +70,8 @@ bar/
    Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver la interfaz.
 
 3. **Credenciales de Acceso Rápido (Demo):**
-   - **Administrador de Sede (Cliente):** `admin@dionisio.com` / `admin123` *(Redirige a la gestión de barra/mesas)*.
-   - **Super Administrador (Tú):** `superadmin@dionisio.com` / `admin123` *(Redirige a métricas globales)*.
+   - **Administrador de Sede (Cliente):** `admin@bar.com` / `admin123` *(Redirige a la gestión de barra/mesas)*.
+   - **Super Administrador (Tú):** `superadmin@bar.com `jccg2105.ge a métricas globales)*.
 
 ---
 
