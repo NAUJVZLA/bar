@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   authors: [{ name: "ALCO Tech" }],
   icons: {
     icon: "/icon?v=4",
+    shortcut: "/icon?v=4",
+    apple: "/icon?v=4",
   },
 };
 
