@@ -185,9 +185,7 @@ export default function MesasPage() {
 
   const submitCheckoutMesa = () => {
     if (!selectedMesa) return;
-    const subtotal = selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0);
-    const impoconsumo = 0; // Removido el impoconsumo por solicitud del usuario
-    const total = subtotal;
+    const total = selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0);
     const waiter = localStorage.getItem('alico_last_waiter') || 'Administrador';
 
     if (metodoPago === 'CREDITO' && (!selectedMesa.cliente_nombre.trim() || selectedMesa.cliente_nombre.trim() === 'Cliente General')) {
@@ -451,7 +449,7 @@ export default function MesasPage() {
               )}
             </div>
 
-            {/* Fila del subtotal y IPO */}
+            {/* Resumen de consumos acumulados */}
             {selectedMesa.consumos.length > 0 && (
               <div className="p-3 bg-zinc-950/80 border border-white/5 rounded-xl mb-4 space-y-1">
                 <div className="flex justify-between text-xs font-black text-white">
@@ -622,10 +620,7 @@ export default function MesasPage() {
                 
                 <div className="flex justify-between text-xs font-black text-white pt-2 border-t border-white/5">
                   <span className="text-amber-500">Monto Facturado</span>
-                  <span className="text-amber-500">${(
-                    selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0) + 
-                    Math.round(selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0) * 0.08)
-                  ).toLocaleString('es-CO')}</span>
+                  <span className="text-amber-500">${selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0).toLocaleString('es-CO')}</span>
                 </div>
               </div>
 

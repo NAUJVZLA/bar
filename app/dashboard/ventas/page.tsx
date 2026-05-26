@@ -124,7 +124,6 @@ export default function VentasPage() {
 
   // Cálculos de totales
   const subtotal = cart.reduce((sum, item) => sum + (item.producto.precio_venta * item.cantidad), 0);
-  const impuestoIPO = 0; // Removido el impoconsumo por solicitud del usuario
   const total = Math.max(0, subtotal - descuento);
 
   // Registrar transacción de venta en barra
