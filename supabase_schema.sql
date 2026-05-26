@@ -1,5 +1,5 @@
 -- ==============================================================
--- PLAN DE BASE DE DATOS: DIONISIO POS (Lógica Multisede)
+-- PLAN DE BASE DE DATOS: ALCO-JCCG GASTRO BAR POS (Lógica Multisede)
 -- Ejecuta este script en el editor SQL de Supabase para configurar tu Base de Datos remota.
 -- ==============================================================
 
@@ -148,8 +148,8 @@ ON detalle_ventas FOR ALL TO authenticated USING (true);
 
 -- Inyectar Sedes de prueba
 INSERT INTO sedes (id, nombre, direccion) VALUES 
-('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Licorera & Bar Dionisio Norte', 'Av. Principal #102'),
-('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'Dionisio Express Centro', 'Calle 15 #5-40');
+('a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11', 'Licorera & Bar ALCO-JCCG Norte', 'Av. Principal #102'),
+('b0eebc99-9c0b-4ef8-bb6d-6bb9bd380a22', 'ALCO-JCCG Express Centro', 'Calle 15 #5-40');
 
 -- Inyectar Productos Sede Norte
 INSERT INTO productos (sede_id, codigo_barras, nombre, categoria, precio_compra, precio_venta, stock_actual, stock_minimo) VALUES

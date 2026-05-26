@@ -1,6 +1,6 @@
-# Dionisio POS - Licorera & Mini Bar Multisede 🌟
+# ALCO-JCCG POS - Licorera & Mini Bar Multisede 🌟
 
-¡Bienvenido a **Dionisio POS**! Un sistema de punto de venta (POS) y administración de licores, mesas y bodegas premium diseñado específicamente para licoreras y bares con múltiples sedes físicas. 
+¡Bienvenido a **ALCO-JCCG POS**! Un sistema de punto de venta (POS) y administración de licores, mesas y bodegas premium diseñado específicamente para licoreras y bares con múltiples sedes físicas. 
 
 Esta aplicación está desarrollada con **Next.js (App Router)**, **TypeScript**, **Tailwind CSS v4** y cuenta con integración lista para **Supabase (PostgreSQL)**, operando automáticamente en **Modo Demo (Persistencia Local)** si no se configuran variables de entorno.
 
@@ -77,7 +77,7 @@ bar/
 
 ## ⚡ Conectando una Base de Datos Real de Supabase
 
-Cuando estés listo para conectar Dionisio POS a una base de datos real en la nube:
+Cuando estés listo para conectar ALCO-JCCG POS a una base de datos real en la nube:
 
 1. **Crear base de datos en Supabase:**
    Crea un nuevo proyecto en [Supabase](https://supabase.com).

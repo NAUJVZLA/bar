@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { mockDb, Sede, Venta, Producto } from '@/lib/supabaseClient';
+import { mockDb, Sede, Venta, Producto, getMockData } from '@/lib/supabaseClient';
 
 export default function SuperAdminPage() {
   const router = useRouter();
@@ -235,6 +235,32 @@ export default function SuperAdminPage() {
     window.dispatchEvent(new Event('sedeChanged'));
   };
 
+  // ==============================================================
+  // ACCIÓN: EXPORTAR Y DESCARGAR RESPALDO CONTABLE GENERAL (JSON)
+  // Compila todo el estado sincronizado y descarga un archivo físico
+  // ==============================================================
+  const handleDownloadBackup = () => {
+    try {
+      const data = getMockData();
+      const filename = `ALCO-JCCG_POS_Backup_${new Date().toISOString().slice(0, 10)}.json`;
+      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
+        JSON.stringify(data, null, 2)
+      )}`;
+      
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', jsonString);
+      downloadAnchor.setAttribute('download', filename);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      
+      setSuccessMsg('¡Copia de seguridad externa descargada con éxito!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err) {
+      setErrorMsg('Error al generar la copia de seguridad.');
+    }
+  };
+
   // Totales consolidados de todas las sedes
   const totalRecaudadoConsolidado = ventas.reduce((s, v) => s + v.total, 0);
   const totalProductosConsolidado = productos.length;
@@ -256,7 +282,7 @@ export default function SuperAdminPage() {
               </span>
             </div>
             <h1 className="text-2xl font-black text-white mt-1.5 font-sans">
-              ALCO Gastro Bar • Super Administrador
+              ALCO-JCCG Gastro Bar • Super Administrador
             </h1>
             <p className="text-xs text-zinc-400 mt-0.5">
               Bienvenido creador: <span className="text-amber-500 font-semibold">{userName}</span>
@@ -272,6 +298,15 @@ export default function SuperAdminPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.656 48.656 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7C4.647 9.547 4.6 10.768 4.6 12c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.092-1.209.138-2.43.138-3.662z" />
               </svg>
               Simular Venta Rápida
+            </button>
+            <button
+              onClick={handleDownloadBackup}
+              className="px-4 h-9 bg-[#f59e0b] hover:bg-[#d97706] text-black text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/10 cursor-pointer animate-fade-in"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+              </svg>
+              Descargar Respaldo JSON
             </button>
             <button
               onClick={handleLogout}

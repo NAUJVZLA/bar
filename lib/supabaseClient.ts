@@ -136,8 +136,8 @@ export interface CierreCaja {
 // MOCK STATE INITIAL DATA
 // ==========================================
 const INITIAL_SEDES: Sede[] = [
-  { id: 'sede-norte', nombre: 'Licorera & Bar Alico Norte', direccion: 'Av. Principal #102' },
-  { id: 'sede-centro', nombre: 'Alico Express Centro', direccion: 'Calle 15 #5-40' }
+  { id: 'sede-norte', nombre: 'Licorera & Bar ALCO-JCCG Norte', direccion: 'Av. Principal #102' },
+  { id: 'sede-centro', nombre: 'ALCO-JCCG Express Centro', direccion: 'Calle 15 #5-40' }
 ];
 
 const INITIAL_PRODUCTS: Producto[] = [
@@ -242,6 +242,7 @@ export interface MockDataStore {
   ventas: Venta[];
   creditos: CreditoCliente[];
   prestamos: PrestamoBotella[];
+  cierres: CierreCaja[];
 }
 
 // ==========================================
@@ -285,7 +286,8 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       movimientosRes,
       ventasRes,
       creditosRes,
-      prestamosRes
+      prestamosRes,
+      cierresRes
     ] = await Promise.all([
       supabase.from('sedes').select('*'),
       supabase.from('productos').select('*'),
@@ -293,7 +295,8 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       supabase.from('movimientos').select('*'),
       supabase.from('ventas').select('*'),
       supabase.from('creditos').select('*'),
-      supabase.from('prestamos').select('*')
+      supabase.from('prestamos').select('*'),
+      supabase.from('cierres').select('*')
     ]);
 
     if (sedesRes.error) throw sedesRes.error;
@@ -303,6 +306,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     if (ventasRes.error) throw ventasRes.error;
     if (creditosRes.error) throw creditosRes.error;
     if (prestamosRes.error) throw prestamosRes.error;
+    if (cierresRes.error) throw cierresRes.error;
 
     // Actualizar caché local instantáneamente
     setLocalStorage('alico_sedes', sedesRes.data || []);
@@ -312,6 +316,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     setLocalStorage('alico_ventas', ventasRes.data || []);
     setLocalStorage('alico_creditos', creditosRes.data || []);
     setLocalStorage('alico_prestamos', prestamosRes.data || []);
+    setLocalStorage('alico_cierres', cierresRes.data || []);
 
     console.log('🟢 [Alico Sync] Base de datos local sincronizada con la nube.');
     window.dispatchEvent(new Event('supabase_synced'));
@@ -331,6 +336,7 @@ export const getMockData = (): MockDataStore => {
     ventas: getLocalStorage<Venta[]>('alico_ventas', INITIAL_VENTAS),
     creditos: getLocalStorage<CreditoCliente[]>('alico_creditos', INITIAL_CREDITOS),
     prestamos: getLocalStorage<PrestamoBotella[]>('alico_prestamos', INITIAL_PRESTAMOS),
+    cierres: getLocalStorage<CierreCaja[]>('alico_cierres', []),
   };
 };
 
@@ -362,6 +368,10 @@ export const saveMockData = (newData: Partial<MockDataStore>): void => {
   if (newData.prestamos) {
     setLocalStorage('alico_prestamos', newData.prestamos);
     syncTableToSupabase('prestamos');
+  }
+  if (newData.cierres) {
+    setLocalStorage('alico_cierres', newData.cierres);
+    syncTableToSupabase('cierres');
   }
 };
 
@@ -735,18 +745,18 @@ export const mockDb = {
     return null;
   },
   getCierres: (sedeId?: string): CierreCaja[] => {
-    const cierres = getLocalStorage<CierreCaja[]>('alico_cierres', []);
+    const cierres = getMockData().cierres;
     return /^\s*$/.test(sedeId || '') ? cierres : cierres.filter(c => c.sede_id === sedeId);
   },
   registrarCierre: (cierre: Omit<CierreCaja, 'id' | 'fecha_hora'>): CierreCaja => {
-    const cierres = getLocalStorage<CierreCaja[]>('alico_cierres', []);
+    const data = getMockData();
     const newCierre: CierreCaja = {
       id: 'cierre-' + Date.now(),
       fecha_hora: new Date().toISOString(),
       ...cierre
     };
-    cierres.unshift(newCierre);
-    setLocalStorage('alico_cierres', cierres);
+    data.cierres.unshift(newCierre);
+    saveMockData(data);
     return newCierre;
   },
   resetDbToDemo: async (): Promise<void> => {
@@ -762,6 +772,7 @@ export const mockDb = {
 
     if (!isMockMode && supabase) {
       try {
+        await supabase.from('cierres').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('detalle_ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -803,6 +814,7 @@ export const mockDb = {
 
     if (!isMockMode && supabase) {
       try {
+        await supabase.from('cierres').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('detalle_ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
