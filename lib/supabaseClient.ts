@@ -327,10 +327,16 @@ export const syncFromSupabase = async (): Promise<boolean> => {
 };
 
 export const getMockData = (): MockDataStore => {
+  const storedMesas = getLocalStorage<Mesa[]>('alico_mesas', INITIAL_MESAS);
+  const safeMesas = storedMesas.map(m => ({
+    ...m,
+    consumos: m.consumos || []
+  }));
+
   return {
     sedes: getLocalStorage<Sede[]>('alico_sedes', INITIAL_SEDES),
     productos: getLocalStorage<Producto[]>('alico_productos', INITIAL_PRODUCTS),
-    mesas: getLocalStorage<Mesa[]>('alico_mesas', INITIAL_MESAS),
+    mesas: safeMesas,
     movimientos: getLocalStorage<Movimiento[]>('alico_movimientos', INITIAL_MOVIMIENTOS),
     ventas: getLocalStorage<Venta[]>('alico_ventas', INITIAL_VENTAS),
     creditos: getLocalStorage<CreditoCliente[]>('alico_creditos', INITIAL_CREDITOS),
