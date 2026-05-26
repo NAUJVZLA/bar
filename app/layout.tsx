@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   description: "El sistema POS definitivo para ALCO Servicio Gastro Bar. Gestión de inventarios, mapa de mesas interactivas y ventas en barra en tiempo real.",
   keywords: "POS, Bar, Gastro Bar, Inventario, Mesas, Ventas, Restaurante, Admin, ALCO",
   authors: [{ name: "ALCO Tech" }],
+  icons: {
+    icon: "/icon.svg?v=2",
+  },
 };
 
 export default function RootLayout({
