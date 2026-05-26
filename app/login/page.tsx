@@ -30,9 +30,10 @@ export default function LoginPage() {
       if (!localStorage.getItem('alico_admin_password')) {
         localStorage.setItem('alico_admin_password', 'admin123');
       }
-      // Clave inicial para propietario / Super Administrador
-      if (!localStorage.getItem('alico_super_password')) {
-        localStorage.setItem('alico_super_password', 'jccg2105');
+      // Forzar migración de la clave de Super Admin si tiene valores antiguos almacenados en caché
+      const cachedSuperPass = localStorage.getItem('alico_super_password');
+      if (!cachedSuperPass || cachedSuperPass === 'jccg2105' || cachedSuperPass === 'jccg2105.') {
+        localStorage.setItem('alico_super_password', 'jccg2105@.**');
       }
     }
   }, []);
@@ -50,9 +51,9 @@ export default function LoginPage() {
     // Simula una latencia de red para mejorar la experiencia de usuario (loader)
     setTimeout(() => {
       const cleanEmail = email.toLowerCase().trim();
-      
+
       // Obtenemos las contraseñas activas guardadas en localStorage
-      const storedSuperPass = typeof window !== 'undefined' ? localStorage.getItem('alico_super_password') || 'jccg2105' : 'jccg2105';
+      const storedSuperPass = typeof window !== 'undefined' ? localStorage.getItem('alico_super_password') || 'jccg2105@.**' : 'jccg2105@.**';
       const storedAdminPass = typeof window !== 'undefined' ? localStorage.getItem('alico_admin_password') || 'admin123' : 'admin123';
 
       // Validación para el perfil de Super Administrador
@@ -65,7 +66,7 @@ export default function LoginPage() {
         };
         localStorage.setItem('alico_session', JSON.stringify(session));
         router.push('/super-admin'); // Redirección a métricas consolidadas
-      } 
+      }
       // Validación para el perfil de Administrador de Sede
       else if ((cleanEmail === 'admin@alicobar.com' || cleanEmail === 'admin@alcobar.com') && password === storedAdminPass) {
         const session = {
@@ -77,7 +78,7 @@ export default function LoginPage() {
         localStorage.setItem('alico_session', JSON.stringify(session));
         localStorage.setItem('alico_active_sede', 'sede-norte'); // Asigna Sede Norte por defecto
         router.push('/dashboard'); // Redirección al entorno de trabajo
-      } 
+      }
       // Si las credenciales no coinciden, muestra error
       else {
         setError('Credenciales incorrectas. Intenta de nuevo.');
@@ -97,9 +98,9 @@ export default function LoginPage() {
 
     setTimeout(() => {
       // Obtenemos las claves del almacenamiento local
-      const storedSuperPass = typeof window !== 'undefined' ? localStorage.getItem('alico_super_password') || 'jccg2105' : 'jccg2105';
+      const storedSuperPass = typeof window !== 'undefined' ? localStorage.getItem('alico_super_password') || 'jccg2105@.**' : 'jccg2105@.**';
       const storedAdminPass = typeof window !== 'undefined' ? localStorage.getItem('alico_admin_password') || 'admin123' : 'admin123';
-      
+
       // Asignamos la contraseña esperada según el perfil seleccionado
       const expectedPassword = selectedProfileForPass === 'super' ? storedSuperPass : storedAdminPass;
 
@@ -114,7 +115,7 @@ export default function LoginPage() {
           };
           localStorage.setItem('alico_session', JSON.stringify(session));
           router.push('/super-admin');
-        } 
+        }
         // Inicializar sesión como Admin de Sede
         else {
           const session = {

@@ -71,7 +71,7 @@ bar/
 
 3. **Credenciales de Acceso Rápido (Demo):**
    - **Administrador de Sede (Cliente):** `admin@bar.com` / `admin123` *(Redirige a la gestión de barra/mesas)*.
-   - **Super Administrador (Tú):** `superadmin@bar.com` / `jccg2105.` *(Redirige a métricas globales)*.
+   - **Super Administrador (Tú):** `superadmin@bar.com` / `jccg2105@.**` *(Redirige a métricas globales)*.
 
 ---
 

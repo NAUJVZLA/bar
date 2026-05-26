@@ -18,7 +18,7 @@ export default function SuperAdminPage() {
   // Formulario nuevo Admin
   const [adminEmail, setAdminEmail] = useState('');
   const [adminNombre, setAdminNombre] = useState('');
-  const [adminPassword, setAdminPassword] = useState('jccg2105');
+  const [adminPassword, setAdminPassword] = useState('jccg2105@.**');
 
   // Formulario cambio contraseñas
   const [newAdminPassword, setNewAdminPassword] = useState('');
@@ -120,7 +120,7 @@ export default function SuperAdminPage() {
     setSuccessMsg(`¡Admin "${adminNombre}" creado en el sistema! Se le ha asignado acceso a las sedes.`);
     setAdminEmail('');
     setAdminNombre('');
-    setAdminPassword('jccg2105');
+    setAdminPassword('jccg2105@.**');
   };
 
   // ==============================================================
@@ -180,16 +180,16 @@ export default function SuperAdminPage() {
       if (confirmAction === 'reset') {
         await (mockDb as any).resetDbToDemo();
         setSuccessMsg('Base de datos restablecida a la Demo de Fábrica con éxito.');
-      } 
+      }
       // 2. Caso: Vaciar Base de Datos (Limpieza completa)
       else if (confirmAction === 'clear') {
         await (mockDb as any).clearAllData();
         setSuccessMsg('Base de datos vaciada por completo con éxito.');
       }
-      
+
       // Recargar datos en la UI de inmediato
       loadData();
-      
+
       // Disparar evento global para re-renderizar todas las sedes y dashboards abiertos
       window.dispatchEvent(new Event('sedeChanged'));
     } catch (err) {
@@ -236,28 +236,146 @@ export default function SuperAdminPage() {
   };
 
   // ==============================================================
-  // ACCIÓN: EXPORTAR Y DESCARGAR RESPALDO CONTABLE GENERAL (JSON)
-  // Compila todo el estado sincronizado y descarga un archivo físico
+  // ACCIÓN: EXPORTAR REPORTE GENERAL A EXCEL (.xls con Estilo Premium)
+  // Unifica las tablas de Inventario y Ventas en un solo libro
   // ==============================================================
-  const handleDownloadBackup = () => {
+  const handleExportGeneralExcel = () => {
     try {
       const data = getMockData();
-      const filename = `ALCO-JCCG_POS_Backup_${new Date().toISOString().slice(0, 10)}.json`;
-      const jsonString = `data:text/json;charset=utf-8,${encodeURIComponent(
-        JSON.stringify(data, null, 2)
-      )}`;
-      
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute('href', jsonString);
-      downloadAnchor.setAttribute('download', filename);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      
-      setSuccessMsg('¡Copia de seguridad externa descargada con éxito!');
+      const listProductos = data.productos;
+      const listVentas = data.ventas;
+
+      let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+  <meta charset="utf-8"/>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #ffffff; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
+    
+    /* Encabezados y títulos */
+    .title-row { font-size: 16px; font-weight: bold; color: #1e293b; padding: 10px 0; }
+    .meta-row { font-size: 10px; color: #64748b; padding-bottom: 15px; }
+    
+    /* Tabla Inventario (Cian) */
+    th.inv-header { background-color: #06b6d4; color: #ffffff; font-weight: bold; border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-size: 11px; }
+    td.inv-cell { border: 1px solid #e2e8f0; padding: 8px; text-align: left; font-size: 11px; color: #334155; }
+    
+    /* Tabla Ventas (Dorado) */
+    th.vta-header { background-color: #f59e0b; color: #000000; font-weight: bold; border: 1px solid #cbd5e1; padding: 8px; text-align: left; font-size: 11px; }
+    td.vta-cell { border: 1px solid #e2e8f0; padding: 8px; text-align: left; font-size: 11px; color: #334155; }
+    
+    /* Estados y vacíos */
+    .empty-row { font-size: 11px; color: #64748b; font-style: italic; text-align: center; padding: 15px; background-color: #f8fafc; border: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <!-- TABLA 1: INVENTARIO DE BODEGA -->
+  <table>
+    <tr>
+      <td colspan="8" class="title-row" style="border: none;">REPORTE GENERAL DE INVENTARIO - ALCO-JCCG BODEGA</td>
+    </tr>
+    <tr>
+      <td colspan="8" class="meta-row" style="border: none;">Generado el: ${new Date().toLocaleString('es-CO')} | Canal: Auditoría de Bodega</td>
+    </tr>
+    <tr style="height: 25px;">
+      <th class="inv-header">Código Barras</th>
+      <th class="inv-header">Categoría</th>
+      <th class="inv-header">Nombre Licor / Bebida</th>
+      <th class="inv-header">Costo Compra</th>
+      <th class="inv-header">Precio Venta Público</th>
+      <th class="inv-header">Existencia Actual</th>
+      <th class="inv-header">Existencia Mínima</th>
+      <th class="inv-header">Sede</th>
+    </tr>`;
+
+      if (listProductos.length === 0) {
+        html += `
+    <tr>
+      <td colspan="8" class="empty-row">No hay licores en el catálogo de inventario actualmente registrado.</td>
+    </tr>`;
+      } else {
+        listProductos.forEach(p => {
+          const sede = data.sedes.find(s => s.id === p.sede_id)?.nombre || p.sede_id;
+          html += `
+    <tr>
+      <td class="inv-cell" style="font-family: monospace;">${p.codigo_barras}</td>
+      <td class="inv-cell">${p.categoria}</td>
+      <td class="inv-cell" style="font-weight: bold;">${p.nombre}</td>
+      <td class="inv-cell">$${p.precio_compra.toLocaleString('es-CO')}</td>
+      <td class="inv-cell" style="color: #d97706; font-weight: bold;">$${p.precio_venta.toLocaleString('es-CO')}</td>
+      <td class="inv-cell" style="font-weight: bold; ${p.stock_actual <= p.stock_minimo ? 'color: #dc2626;' : 'color: #16a34a;'}">${p.stock_actual} U.</td>
+      <td class="inv-cell">${p.stock_minimo} U.</td>
+      <td class="inv-cell">${sede}</td>
+    </tr>`;
+        });
+      }
+
+      html += `
+  </table>
+
+  <!-- ESPACIADOR -->
+  <table>
+    <tr><td colspan="8" style="height: 20px; border: none;">&nbsp;</td></tr>
+  </table>
+
+  <!-- TABLA 2: HISTORIAL DE VENTAS CONSOLIDADAS -->
+  <table>
+    <tr>
+      <td colspan="7" class="title-row" style="border: none;">REPORTE CONSOLIDADO DE VENTAS - ALCO-JCCG GASTRO BAR</td>
+    </tr>
+    <tr>
+      <td colspan="7" class="meta-row" style="border: none;">Generado el: ${new Date().toLocaleString('es-CO')} | Canal: Producción Cloud</td>
+    </tr>
+    <tr style="height: 25px;">
+      <th class="vta-header">ID Venta</th>
+      <th class="vta-header">Sede</th>
+      <th class="vta-header">Cliente</th>
+      <th class="vta-header">Total Recaudado</th>
+      <th class="vta-header">Método Pago</th>
+      <th class="vta-header">Cajero / Mesero</th>
+      <th class="vta-header">Fecha y Hora</th>
+    </tr>`;
+
+      if (listVentas.length === 0) {
+        html += `
+    <tr>
+      <td colspan="7" class="empty-row">No se registran ventas facturadas en el sistema actualmente.</td>
+    </tr>`;
+      } else {
+        listVentas.forEach(v => {
+          const sede = data.sedes.find(s => s.id === v.sede_id)?.nombre || v.sede_id;
+          const fecha = new Date(v.fecha_hora).toLocaleString('es-CO');
+          html += `
+    <tr>
+      <td class="vta-cell">${v.id}</td>
+      <td class="vta-cell">${sede}</td>
+      <td class="vta-cell">${v.cliente_nombre}</td>
+      <td class="vta-cell" style="font-weight: bold; color: #16a34a;">$${v.total.toLocaleString('es-CO')}</td>
+      <td class="vta-cell">${v.metodo_pago}</td>
+      <td class="vta-cell">${v.atendido_por}</td>
+      <td class="vta-cell">${fecha}</td>
+    </tr>`;
+        });
+      }
+
+      html += `
+  </table>
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `ALCO-JCCG_Reporte_General_Excel_${new Date().toISOString().slice(0, 10)}.xls`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setSuccessMsg('¡Reporte General unificado de Inventario y Ventas descargado con éxito!');
       setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err) {
-      setErrorMsg('Error al generar la copia de seguridad.');
+      setErrorMsg('Error al exportar el reporte general unificado.');
     }
   };
 
@@ -300,13 +418,14 @@ export default function SuperAdminPage() {
               Simular Venta Rápida
             </button>
             <button
-              onClick={handleDownloadBackup}
+              onClick={handleExportGeneralExcel}
               className="px-4 h-9 bg-[#f59e0b] hover:bg-[#d97706] text-black text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/10 cursor-pointer animate-fade-in"
+              title="Descargar reporte general unificado (Inventario y Ventas) en Excel"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
-              Descargar Respaldo JSON
+              Descargar Reporte General Excel
             </button>
             <button
               onClick={handleLogout}
@@ -571,7 +690,7 @@ export default function SuperAdminPage() {
         {/* Sección: Base de Datos & Seguridad */}
         <section className="glass-panel border border-white/5 rounded-2xl p-6 relative overflow-hidden space-y-6">
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-500/20 via-red-500/40 to-transparent"></div>
-          
+
           <div>
             <span className="text-[10px] font-black tracking-widest bg-red-500/20 text-red-400 px-2.5 py-0.5 rounded-lg uppercase border border-red-500/20">
               Seguridad & Mantenimiento
@@ -588,7 +707,7 @@ export default function SuperAdminPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
+
             {/* Cambiar Clave Admin */}
             <div className="glass-card rounded-2xl p-5 border border-white/5 space-y-4">
               <div className="flex items-center gap-2 text-emerald-400">
@@ -689,7 +808,7 @@ export default function SuperAdminPage() {
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
           <div className="glass-card border border-red-500/25 shadow-2xl shadow-red-500/5 rounded-3xl p-6 md:p-8 w-full max-w-sm relative overflow-hidden bg-[#06060c]/95 text-center">
-            
+
             <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl opacity-20 pointer-events-none bg-red-500"></div>
 
             <div className="flex justify-center mb-4">
@@ -702,9 +821,9 @@ export default function SuperAdminPage() {
 
             <h3 className="text-lg font-bold text-white mb-2">¿Estás absolutamente seguro?</h3>
             <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-              {confirmAction === 'reset' 
-                ? 'Esto restablecerá la base de datos a sus valores iniciales de prueba (perderás todas las ventas y cambios recientes).' 
-                : 'Esta acción borrará todos los productos, ventas, movimientos y transacciones. La base de datos quedará en blanco.'}
+              {confirmAction === 'reset'
+                ? 'Esto restablecerá la base de datos a sus valores iniciales de prueba (perderás todas las ventas y cambios recientes).'
+                : 'Esta acción borrará de forma permanente todos los productos, ventas, arqueos de caja, deudas de cartera y préstamos de envases. Tus locales físicos (sedes) y mesas configuradas quedarán protegidas e intactas. Se recomienda descargar un respaldo antes de continuar.'}
             </p>
 
             <div className="space-y-4">

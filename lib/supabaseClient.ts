@@ -794,17 +794,17 @@ export const mockDb = {
     }
   },
   clearAllData: async (): Promise<void> => {
-    const defaultSedes = [{ id: 'sede-norte', nombre: 'Licorera & Bar Alico Norte', direccion: 'Av. Principal #102' }];
-    const defaultMesas = [
-      { id: 'm1', sede_id: 'sede-norte', numero_mesa: 'Mesa 1', estado: 'DISPONIBLE' as const, cliente_nombre: '', consumos: [] },
-      { id: 'm2', sede_id: 'sede-norte', numero_mesa: 'Mesa 2', estado: 'DISPONIBLE' as const, cliente_nombre: '', consumos: [] },
-      { id: 'm3', sede_id: 'sede-norte', numero_mesa: 'Mesa 3', estado: 'DISPONIBLE' as const, cliente_nombre: '', consumos: [] },
-      { id: 'm4', sede_id: 'sede-norte', numero_mesa: 'Barra Asientos', estado: 'DISPONIBLE' as const, cliente_nombre: '', consumos: [] }
-    ];
+    // En local: limpiar consumos de las mesas y resetear estado a DISPONIBLE, pero no borrarlas
+    const currentMesas = getLocalStorage<Mesa[]>('alico_mesas', []);
+    const clearedMesas = currentMesas.map(m => ({
+      ...m,
+      estado: 'DISPONIBLE' as const,
+      cliente_nombre: '',
+      consumos: []
+    }));
 
-    setLocalStorage('alico_sedes', defaultSedes);
     setLocalStorage('alico_productos', []);
-    setLocalStorage('alico_mesas', defaultMesas);
+    setLocalStorage('alico_mesas', clearedMesas);
     setLocalStorage('alico_movimientos', []);
     setLocalStorage('alico_ventas', []);
     setLocalStorage('alico_creditos', []);
@@ -814,17 +814,21 @@ export const mockDb = {
 
     if (!isMockMode && supabase) {
       try {
+        // Borrar tablas transaccionales y de productos
         await supabase.from('cierres').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('detalle_ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('consumos_mesa').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('mesas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        // Limpiar los consumos de las mesas en Supabase (reiniciar estado a DISPONIBLE), pero no borrarlas
+        await supabase.from('mesas').update({
+          estado: 'DISPONIBLE',
+          cliente_nombre: ''
+        }).neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        // Borrar productos
         await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('sedes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-
-        await supabase.from('sedes').insert(defaultSedes);
-        await supabase.from('mesas').insert(defaultMesas.map(({ consumos, ...rest }) => rest));
       } catch (err) {
         console.error('Error clear remote Supabase:', err);
       }
