@@ -186,8 +186,8 @@ export default function MesasPage() {
   const submitCheckoutMesa = () => {
     if (!selectedMesa) return;
     const subtotal = selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0);
-    const impoconsumo = Math.round(subtotal * 0.08);
-    const total = subtotal + impoconsumo;
+    const impoconsumo = 0; // Removido el impoconsumo por solicitud del usuario
+    const total = subtotal;
     const waiter = localStorage.getItem('alico_last_waiter') || 'Administrador';
 
     if (metodoPago === 'CREDITO' && (!selectedMesa.cliente_nombre.trim() || selectedMesa.cliente_nombre.trim() === 'Cliente General')) {
@@ -454,20 +454,9 @@ export default function MesasPage() {
             {/* Fila del subtotal y IPO */}
             {selectedMesa.consumos.length > 0 && (
               <div className="p-3 bg-zinc-950/80 border border-white/5 rounded-xl mb-4 space-y-1">
-                <div className="flex justify-between text-[10px] text-zinc-500 font-semibold">
-                  <span>Consumo Neto</span>
-                  <span>${selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0).toLocaleString('es-CO')}</span>
-                </div>
-                <div className="flex justify-between text-[10px] text-zinc-500 font-semibold">
-                  <span>IPO (8% impoconsumo bar)</span>
-                  <span>${Math.round(selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0) * 0.08).toLocaleString('es-CO')}</span>
-                </div>
-                <div className="flex justify-between text-xs font-black text-white pt-1.5 border-t border-white/5">
+                <div className="flex justify-between text-xs font-black text-white">
                   <span className="text-amber-500">Total Acumulado</span>
-                  <span className="text-amber-500">${(
-                    selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0) + 
-                    Math.round(selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0) * 0.08)
-                  ).toLocaleString('es-CO')}</span>
+                  <span className="text-amber-500">${selectedMesa.consumos.reduce((s, c) => s + (c.precio_unitario * c.cantidad), 0).toLocaleString('es-CO')}</span>
                 </div>
               </div>
             )}

@@ -124,8 +124,8 @@ export default function VentasPage() {
 
   // Cálculos de totales
   const subtotal = cart.reduce((sum, item) => sum + (item.producto.precio_venta * item.cantidad), 0);
-  const impuestoIPO = Math.round(subtotal * 0.08); // Impuesto al consumo del 8%
-  const total = Math.max(0, subtotal + impuestoIPO - descuento);
+  const impuestoIPO = 0; // Removido el impoconsumo por solicitud del usuario
+  const total = Math.max(0, subtotal - descuento);
 
   // Registrar transacción de venta en barra
   const handleCheckout = () => {
@@ -457,10 +457,6 @@ export default function VentasPage() {
               <div className="flex justify-between text-[10px] text-zinc-500 font-semibold">
                 <span>Subtotal Barra</span>
                 <span>${subtotal.toLocaleString('es-CO')}</span>
-              </div>
-              <div className="flex justify-between text-[10px] text-zinc-500 font-semibold">
-                <span>IPO (8% impoconsumo)</span>
-                <span>${impuestoIPO.toLocaleString('es-CO')}</span>
               </div>
               {descuento > 0 && (
                 <div className="flex justify-between text-[10px] text-red-400 font-semibold animate-fade-in">

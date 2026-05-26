@@ -11,7 +11,7 @@ export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
   }
 
   const subtotal = venta.items.reduce((s, item) => s + (item.precio_unitario * item.cantidad), 0);
-  const ipo = Math.round(subtotal * 0.08);
+  const ipo = 0; // Removido el impoconsumo por solicitud del usuario
   const itemsHtml = venta.items.map(item => `
     <tr>
       <td style="padding: 4px 0; font-family: 'Courier New', monospace; font-size: 11px;">${item.cantidad}x ${item.nombre}</td>
@@ -21,8 +21,8 @@ export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
 
   const mesaString = mesaNumero ? `<p style="margin: 3px 0; font-family: 'Courier New', monospace; font-size: 11px;"><strong>Mesa:</strong> ${mesaNumero}</p>` : '';
   
-  // Calcular descuento real si el total final es menor que subtotal + ipo
-  const calculatedTotal = subtotal + ipo;
+  // Calcular descuento real si el total final es menor que subtotal
+  const calculatedTotal = subtotal;
   const discount = Math.max(0, calculatedTotal - venta.total);
   const discountString = discount > 0 ? `
     <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: 'Courier New', monospace; margin-top: 2px;">
