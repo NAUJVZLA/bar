@@ -21,7 +21,6 @@ export const supabase: SupabaseClient | null = !isMockMode
 export interface Sede {
   id: string;
   nombre: string;
-  direccion: string;
 }
 
 export interface Producto {
@@ -136,8 +135,8 @@ export interface CierreCaja {
 // MOCK STATE INITIAL DATA
 // ==========================================
 const INITIAL_SEDES: Sede[] = [
-  { id: 'sede-norte', nombre: 'Licorera & Bar ALCO-JCCG Norte', direccion: 'Av. Principal #102' },
-  { id: 'sede-centro', nombre: 'ALCO-JCCG Express Centro', direccion: 'Calle 15 #5-40' }
+  { id: 'sede-norte', nombre: 'Licorera & Bar ALCO-JCCG Norte' },
+  { id: 'sede-centro', nombre: 'ALCO-JCCG Express Centro' }
 ];
 
 const INITIAL_PRODUCTS: Producto[] = [

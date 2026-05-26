@@ -13,7 +13,6 @@ export default function SuperAdminPage() {
 
   // Formulario nueva Sede
   const [nombreSede, setNombreSede] = useState('');
-  const [direccionSede, setDireccionSede] = useState('');
 
   // Formulario nuevo Admin
   const [adminEmail, setAdminEmail] = useState('');
@@ -73,15 +72,14 @@ export default function SuperAdminPage() {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (!nombreSede.trim() || !direccionSede.trim()) {
+    if (!nombreSede.trim()) {
       setErrorMsg('Por favor completa todos los campos.');
       return;
     }
 
     try {
       const newSede = mockDb.addSede({
-        nombre: nombreSede,
-        direccion: direccionSede
+        nombre: nombreSede
       });
 
       // Crear mesas por defecto para la nueva sede en el localStorage
@@ -96,7 +94,6 @@ export default function SuperAdminPage() {
 
       setSuccessMsg(`¡Sede "${nombreSede}" creada con éxito junto con 4 mesas predeterminadas!`);
       setNombreSede('');
-      setDireccionSede('');
       loadData();
 
       // Emitir cambio de sede global por seguridad
@@ -490,7 +487,6 @@ export default function SuperAdminPage() {
                     <div key={s.id} className="p-4 bg-black/40 border border-white/5 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <div>
                         <h4 className="text-xs font-bold text-white">{s.nombre}</h4>
-                        <p className="text-[10px] text-zinc-500 mt-0.5 font-medium">{s.direccion}</p>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
@@ -603,19 +599,7 @@ export default function SuperAdminPage() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
-                    Dirección Física
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={direccionSede}
-                    onChange={(e) => setDireccionSede(e.target.value)}
-                    placeholder="Ej. Calle 85 # 11-20"
-                    className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
-                  />
-                </div>
+
 
                 <button
                   type="submit"

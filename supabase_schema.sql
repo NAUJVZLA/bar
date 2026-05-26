@@ -7,6 +7,9 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Limpieza preventiva
+DROP TABLE IF EXISTS creditos CASCADE;
+DROP TABLE IF EXISTS prestamos CASCADE;
+DROP TABLE IF EXISTS cierres CASCADE;
 DROP TABLE IF EXISTS detalle_ventas CASCADE;
 DROP TABLE IF EXISTS ventas CASCADE;
 DROP TABLE IF EXISTS movimientos CASCADE;
@@ -17,16 +20,15 @@ DROP TABLE IF EXISTS sedes CASCADE;
 
 -- 2. TABLA SEDES
 CREATE TABLE sedes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
     nombre VARCHAR(100) NOT NULL,
-    direccion VARCHAR(200),
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 3. TABLA PRODUCTOS (Inventario)
 CREATE TABLE productos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    sede_id UUID NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    sede_id VARCHAR(100) NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
     codigo_barras VARCHAR(50) DEFAULT 'SIN-CODIGO',
     nombre VARCHAR(150) NOT NULL,
     categoria VARCHAR(80) DEFAULT 'Varios',
@@ -43,8 +45,8 @@ CREATE INDEX idx_productos_codigo ON productos(codigo_barras);
 
 -- 4. TABLA MESAS
 CREATE TABLE mesas (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    sede_id UUID NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    sede_id VARCHAR(100) NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
     numero_mesa VARCHAR(50) NOT NULL,
     estado VARCHAR(30) DEFAULT 'DISPONIBLE' CHECK (estado IN ('DISPONIBLE', 'OCUPADA', 'PAGANDO')) NOT NULL,
     cliente_nombre VARCHAR(100) DEFAULT '',
@@ -55,9 +57,9 @@ CREATE INDEX idx_mesas_sede ON mesas(sede_id);
 
 -- 5. TABLA CONSUMOS_MESA (Pedidos / Comandas acumuladas)
 CREATE TABLE consumos_mesa (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    mesa_id UUID NOT NULL REFERENCES mesas(id) ON DELETE CASCADE,
-    producto_id UUID NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    mesa_id VARCHAR(100) NOT NULL REFERENCES mesas(id) ON DELETE CASCADE,
+    producto_id VARCHAR(100) NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
     cantidad INTEGER DEFAULT 1 CHECK (cantidad > 0) NOT NULL,
     precio_unitario NUMERIC(12, 2) NOT NULL,
     registrado_por VARCHAR(100) NOT NULL,
@@ -68,9 +70,9 @@ CREATE INDEX idx_consumos_mesa ON consumos_mesa(mesa_id);
 
 -- 6. TABLA MOVIMIENTOS (Historial de Auditoría / Kárdex)
 CREATE TABLE movimientos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    sede_id UUID NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
-    producto_id UUID NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    sede_id VARCHAR(100) NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+    producto_id VARCHAR(100) NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
     producto_nombre VARCHAR(150) NOT NULL,
     tipo VARCHAR(20) CHECK (tipo IN ('INGRESO', 'EGRESO')) NOT NULL,
     cantidad INTEGER NOT NULL CHECK (cantidad > 0),
@@ -84,8 +86,8 @@ CREATE INDEX idx_movimientos_producto ON movimientos(producto_id);
 
 -- 7. TABLA VENTAS (Facturación / Historial de Caja)
 CREATE TABLE ventas (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    sede_id UUID NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    sede_id VARCHAR(100) NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
     cliente_nombre VARCHAR(100) DEFAULT 'Cliente General' NOT NULL,
     total NUMERIC(12, 2) NOT NULL,
     metodo_pago VARCHAR(40) CHECK (metodo_pago IN ('EFECTIVO', 'TARJETA', 'TRANSFERENCIA')) NOT NULL,
@@ -97,9 +99,9 @@ CREATE INDEX idx_ventas_sede ON ventas(sede_id);
 
 -- 8. TABLA DETALLE_VENTAS (Auditoría desagregada de la Venta)
 CREATE TABLE detalle_ventas (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    venta_id UUID NOT NULL REFERENCES ventas(id) ON DELETE CASCADE,
-    producto_id UUID NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    venta_id VARCHAR(100) NOT NULL REFERENCES ventas(id) ON DELETE CASCADE,
+    producto_id VARCHAR(100) NOT NULL REFERENCES productos(id) ON DELETE RESTRICT,
     nombre VARCHAR(150) NOT NULL,
     cantidad INTEGER NOT NULL CHECK (cantidad > 0),
     precio_unitario NUMERIC(12, 2) NOT NULL
@@ -109,10 +111,10 @@ CREATE INDEX idx_detalle_ventas_padre ON detalle_ventas(venta_id);
 
 -- 9. TABLA CREDITOS (Cartera de Deudas)
 CREATE TABLE creditos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    sede_id UUID NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    sede_id VARCHAR(100) NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
     cliente_nombre VARCHAR(100) NOT NULL,
-    venta_id UUID REFERENCES ventas(id) ON DELETE SET NULL,
+    venta_id VARCHAR(100) REFERENCES ventas(id) ON DELETE SET NULL,
     total_deuda NUMERIC(12, 2) DEFAULT 0 NOT NULL,
     total_pagado NUMERIC(12, 2) DEFAULT 0 NOT NULL,
     estado VARCHAR(30) DEFAULT 'PENDIENTE' CHECK (estado IN ('PENDIENTE', 'PAGADO')) NOT NULL,
@@ -126,8 +128,8 @@ CREATE INDEX idx_creditos_sede ON creditos(sede_id);
 
 -- 10. TABLA PRESTAMOS (Préstamos de Envases / Botellas)
 CREATE TABLE prestamos (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    sede_id UUID NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    sede_id VARCHAR(100) NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
     cliente_nombre VARCHAR(100) NOT NULL,
     botella_nombre VARCHAR(150) NOT NULL,
     cantidad INTEGER DEFAULT 1 CHECK (cantidad > 0) NOT NULL,
@@ -136,7 +138,7 @@ CREATE TABLE prestamos (
     fecha_devolucion TIMESTAMP WITH TIME ZONE,
     registrado_por VARCHAR(100) NOT NULL,
     descontó_stock BOOLEAN DEFAULT FALSE NOT NULL,
-    producto_id UUID REFERENCES productos(id) ON DELETE SET NULL,
+    producto_id VARCHAR(100) REFERENCES productos(id) ON DELETE SET NULL,
     notas TEXT
 );
 
@@ -144,8 +146,8 @@ CREATE INDEX idx_prestamos_sede ON prestamos(sede_id);
 
 -- 11. TABLA CIERRES (Arqueo / Cierres de Caja)
 CREATE TABLE cierres (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    sede_id UUID NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    sede_id VARCHAR(100) NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
     fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     monto_apertura NUMERIC(12, 2) DEFAULT 0 NOT NULL,
     ventas_efectivo NUMERIC(12, 2) DEFAULT 0 NOT NULL,
@@ -239,9 +241,9 @@ CREATE POLICY "Permitir eliminacion publica en cierres" ON cierres FOR DELETE US
 -- ==============================================================
 
 -- Inyectar Sedes de prueba
-INSERT INTO sedes (id, nombre, direccion) VALUES 
-('sede-norte', 'Licorera & Bar ALCO-JCCG Norte', 'Av. Principal #102'),
-('sede-centro', 'ALCO-JCCG Express Centro', 'Calle 15 #5-40');
+INSERT INTO sedes (id, nombre) VALUES 
+('sede-norte', 'Licorera & Bar ALCO-JCCG Norte'),
+('sede-centro', 'ALCO-JCCG Express Centro');
 
 -- Inyectar Productos Sede Norte
 INSERT INTO productos (id, sede_id, codigo_barras, nombre, categoria, precio_compra, precio_venta, stock_actual, stock_minimo) VALUES
