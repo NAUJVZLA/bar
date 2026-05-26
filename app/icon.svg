@@ -1,60 +1,105 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
-    <!-- Gradiente dorado premium de ALCO -->
-    <linearGradient id="alcoGold" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#fde047" />
-      <stop offset="60%" stop-color="#f59e0b" />
-      <stop offset="100%" stop-color="#b45309" />
+    <!-- Gradiente metálico oscuro realista para la placa base -->
+    <radialGradient id="metalBg" cx="40%" cy="35%" r="60%" fx="35%" fy="30%">
+      <stop offset="0%" stop-color="#24242e" />
+      <stop offset="60%" stop-color="#0a0a0f" />
+      <stop offset="100%" stop-color="#020204" />
+    </radialGradient>
+    
+    <!-- Gradiente de oro pulido 24K para bordes y copa -->
+    <linearGradient id="goldLuxury" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a" /> <!-- Oro Claro -->
+      <stop offset="40%" stop-color="#f59e0b" /> <!-- Oro Medio -->
+      <stop offset="70%" stop-color="#d97706" /> <!-- Oro Oscuro -->
+      <stop offset="100%" stop-color="#78350f" /> <!-- Bronce de Sombra -->
     </linearGradient>
 
-    <!-- Gradiente de fondo de vidrio oscuro translúcido con tono nocturno de bar -->
-    <linearGradient id="glassBg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#11111a" stop-opacity="0.95" />
-      <stop offset="100%" stop-color="#020204" stop-opacity="0.98" />
+    <!-- Gradiente para el líquido ámbar brillante dentro de la copa -->
+    <linearGradient id="neonLiquid" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#ea580c" /> <!-- Naranja Profundo -->
+      <stop offset="100%" stop-color="#f59e0b" /> <!-- Amarillo Cantante -->
     </linearGradient>
-    
-    <!-- Filtro de brillo neón dorado cibernético -->
-    <filter id="cyberGlow" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="11" result="blur" />
+
+    <!-- Gradiente de reflejo de cristal 3D -->
+    <linearGradient id="glassReflection" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.22" />
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.0" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.5" />
+    </linearGradient>
+
+    <!-- Filtro de brillo de neón premium -->
+    <filter id="ultraGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
       <feMerge>
         <feMergeNode in="blur" />
         <feMergeNode in="SourceGraphic" />
       </feMerge>
     </filter>
 
-    <!-- Filtro para el brillo posterior púrpura/índigo (Iluminación de bar lounge nocturno) -->
-    <radialGradient id="purpleGlow" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#6366f1" stop-opacity="0.22" />
-      <stop offset="70%" stop-color="#a855f7" stop-opacity="0.03" />
-      <stop offset="100%" stop-color="#000000" stop-opacity="0" />
-    </radialGradient>
+    <!-- Sombra interna de la placa metálica -->
+    <filter id="depthShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feOffset dx="0" dy="5" />
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite operator="out" in="SourceGraphic" in2="blur" result="inverse" />
+      <feFlood flood-color="black" flood-opacity="0.8" result="color" />
+      <feComposite operator="in" in="color" in2="inverse" result="shadow" />
+      <feComposite operator="over" in="shadow" in2="SourceGraphic" />
+    </filter>
   </defs>
 
-  <!-- 1. Brillo de ambiente nocturno (Morado/Índigo Lounge Glow) -->
-  <circle cx="256" cy="256" r="250" fill="url(#purpleGlow)" />
+  <!-- 1. Sombra exterior del botón circular -->
+  <circle cx="256" cy="256" r="230" fill="#000000" opacity="0.4" filter="blur(6px)" />
 
-  <!-- 2. Placa Hexagonal con diseño Cyber-Glassmorphism (Hexágono redondeado moderno) -->
-  <path d="M256 30 L436 134 V378 L256 482 L76 378 V134 Z" fill="url(#glassBg)" stroke="url(#alcoGold)" stroke-width="12" stroke-linejoin="round" />
+  <!-- 2. Placa Base Metálica Premium -->
+  <circle cx="256" cy="256" r="226" fill="url(#metalBg)" filter="url(#depthShadow)" />
   
-  <!-- 3. Segundo borde interior extra fino en oro de precisión -->
-  <path d="M256 46 L416 138 V374 L256 466 L96 374 V138 Z" fill="none" stroke="url(#alcoGold)" stroke-width="3" stroke-dasharray="14 10" opacity="0.45" stroke-linejoin="round" />
+  <!-- 3. Brillo de cristal superficial -->
+  <circle cx="256" cy="256" r="226" fill="url(#glassReflection)" />
 
-  <!-- 4. Isotipo Monograma "A" Cibernético Estilizado (Geometría Segmentada de Lujo) -->
-  <g filter="url(#cyberGlow)">
-    <!-- Pierna Izquierda de la A segmentada -->
-    <path d="M240 120 L150 400 H200 L256 220 Z" fill="url(#alcoGold)" />
-    <!-- Pierna Derecha de la A segmentada -->
-    <path d="M272 120 L256 170 L312 350 H362 Z" fill="url(#alcoGold)" opacity="0.85" />
-    <!-- Barra transversal flotante de neón -->
-    <path d="M190 300 H322" stroke="url(#alcoGold)" stroke-width="18" stroke-linecap="round" />
-    <path d="M190 300 H322" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.8" filter="drop-shadow(0px 0px 3px #f59e0b)" />
+  <!-- 4. Bisel dorado 3D exterior -->
+  <circle cx="256" cy="256" r="222" fill="none" stroke="url(#goldLuxury)" stroke-width="8" />
+  <circle cx="256" cy="256" r="218" fill="none" stroke="#000000" stroke-width="1.5" opacity="0.5" />
+
+  <!-- 5. Anillos concéntricos decorativos finos -->
+  <circle cx="256" cy="256" r="202" fill="none" stroke="url(#goldLuxury)" stroke-width="1.5" opacity="0.25" />
+  <circle cx="256" cy="256" r="192" fill="none" stroke="url(#goldLuxury)" stroke-width="3.5" stroke-dasharray="8 6" opacity="0.45" />
+
+  <!-- 6. Copa de Cóctel / Martini 3D Brillante y Detallada -->
+  <g filter="url(#ultraGlow)">
+    <!-- Resplandor neón naranja de fondo -->
+    <path d="M166 150 L256 280 L346 150 Z" fill="#ea580c" opacity="0.3" filter="blur(6px)" />
+    
+    <!-- Cáliz de la copa (Borde exterior de oro de 24k) -->
+    <path d="M166 150 L256 280 L346 150 Z" fill="none" stroke="url(#goldLuxury)" stroke-width="12" stroke-linejoin="round" />
+    
+    <!-- Líquido cóctel ámbar vibrante en el interior -->
+    <path d="M182 172 L256 270 L330 172 Z" fill="url(#neonLiquid)" />
+    
+    <!-- Tallo de la copa -->
+    <path d="M256 276 V390" stroke="url(#goldLuxury)" stroke-width="14" stroke-linecap="round" />
+    
+    <!-- Base de la copa -->
+    <path d="M206 390 H306" stroke="url(#goldLuxury)" stroke-width="12" stroke-linecap="round" />
+    
+    <!-- Línea interna de brillo de neón blanco para realismo físico -->
+    <path d="M185 160 L256 265 L327 160" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.85" />
+    <path d="M256 276 V375" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.85" />
+    
+    <!-- Destello blanco en el borde de la copa (Brillo de cristal) -->
+    <ellipse cx="256" cy="150" rx="90" ry="8" fill="none" stroke="url(#goldLuxury)" stroke-width="6" />
+    <ellipse cx="256" cy="150" rx="90" ry="8" fill="none" stroke="#ffffff" stroke-width="2.5" opacity="0.9" />
+
+    <!-- Aceituna / Adorno en palillo (Detalle premium de bar de cócteles) -->
+    <path d="M306 120 L246 220" stroke="url(#goldLuxury)" stroke-width="3.5" />
+    <circle cx="286" cy="153" r="14" fill="#16a34a" stroke="url(#goldLuxury)" stroke-width="2" />
+    <circle cx="286" cy="153" r="4" fill="#dc2626" />
   </g>
 
-  <!-- 5. Puntos de luz en las intersecciones del hexágono -->
-  <circle cx="256" cy="30" r="6" fill="#ffffff" filter="drop-shadow(0px 0px 4px #fbbf24)" />
-  <circle cx="436" cy="134" r="5" fill="#ffffff" opacity="0.85" />
-  <circle cx="436" cy="378" r="5" fill="#ffffff" opacity="0.85" />
-  <circle cx="256" cy="482" r="6" fill="#ffffff" filter="drop-shadow(0px 0px 4px #fbbf24)" />
-  <circle cx="76" cy="378" r="5" fill="#ffffff" opacity="0.85" />
-  <circle cx="76" cy="134" r="5" fill="#ffffff" opacity="0.85" />
+  <!-- 7. Estrellas de brillo premium en los costados (Calidad Gastro Bar) -->
+  <path d="M100 240 L105 250 L115 255 L105 260 L100 270 L95 260 L85 255 L95 250 Z" fill="url(#goldLuxury)" filter="url(#ultraGlow)" />
+  <path d="M412 240 L417 250 L427 255 L417 260 L412 270 L407 260 L397 255 L407 250 Z" fill="url(#goldLuxury)" filter="url(#ultraGlow)" />
+
+  <!-- 8. Reflejo tipo media luna de cristal superior -->
+  <path d="M60 170 A 226 226 0 0 1 452 170 A 226 150 0 0 0 60 170 Z" fill="#ffffff" fill-opacity="0.08" />
 </svg>
