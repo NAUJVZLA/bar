@@ -11,7 +11,6 @@ export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
   }
 
   const subtotal = venta.items.reduce((s, item) => s + (item.precio_unitario * item.cantidad), 0);
-  const ipo = 0; // Removido el impoconsumo por solicitud del usuario
   const itemsHtml = venta.items.map(item => `
     <tr>
       <td style="padding: 4px 0; font-family: 'Courier New', monospace; font-size: 11px;">${item.cantidad}x ${item.nombre}</td>
@@ -21,9 +20,8 @@ export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
 
   const mesaString = mesaNumero ? `<p style="margin: 3px 0; font-family: 'Courier New', monospace; font-size: 11px;"><strong>Mesa:</strong> ${mesaNumero}</p>` : '';
   
-  // Calcular descuento real si el total final es menor que subtotal
-  const calculatedTotal = subtotal;
-  const discount = Math.max(0, calculatedTotal - venta.total);
+  // Descuento = diferencia entre suma de items y el total registrado
+  const discount = Math.max(0, subtotal - venta.total);
   const discountString = discount > 0 ? `
     <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: 'Courier New', monospace; margin-top: 2px;">
       <span>Descuento:</span>
@@ -105,14 +103,10 @@ export const printThermalReceipt = (venta: Venta, mesaNumero?: string) => {
         
         <div class="divider"></div>
         
-        <div style="display: flex; justify-content: space-between; font-size: 10.5px; font-family: 'Courier New', monospace;">
-          <span>Subtotal Neto:</span>
+        ${discount > 0 ? `<div style="display: flex; justify-content: space-between; font-size: 10.5px; font-family: 'Courier New', monospace;">
+          <span>Subtotal:</span>
           <span>$${subtotal.toLocaleString('es-CO')}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 10.5px; font-family: 'Courier New', monospace; margin-top: 2px;">
-          <span>Impuesto IPO (8%):</span>
-          <span>$${ipo.toLocaleString('es-CO')}</span>
-        </div>
+        </div>` : ''}
         ${discountString}
         
         <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px; font-family: 'Courier New', monospace; margin-top: 5px; border-top: 1px dashed #000; padding-top: 5px;">

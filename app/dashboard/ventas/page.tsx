@@ -532,18 +532,10 @@ export default function VentasPage() {
                 </tbody>
               </table>
               <div className="border-t border-dashed border-black my-1"></div>
-              <div className="flex justify-between">
-                <span>Neto:</span>
-                <span>${(completedVenta.items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0)).toLocaleString('es-CO')}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>IPO (8%):</span>
-                <span>${(Math.round(completedVenta.items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0) * 0.08)).toLocaleString('es-CO')}</span>
-              </div>
-              {completedVenta.items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0) * 1.08 > completedVenta.total && (
+              {completedVenta.items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0) > completedVenta.total && (
                 <div className="flex justify-between text-red-700">
                   <span>Descuento:</span>
-                  <span>-${(Math.max(0, Math.round(completedVenta.items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0) * 1.08) - completedVenta.total)).toLocaleString('es-CO')}</span>
+                  <span>-${(Math.max(0, completedVenta.items.reduce((s, i) => s + i.precio_unitario * i.cantidad, 0) - completedVenta.total)).toLocaleString('es-CO')}</span>
                 </div>
               )}
               <div className="border-t border-dashed border-black my-1"></div>
