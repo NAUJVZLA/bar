@@ -18,9 +18,9 @@ export const metadata: Metadata = {
   keywords: "POS, Bar, Gastro Bar, Inventario, Mesas, Ventas, Restaurante, Admin, ALCO",
   authors: [{ name: "ALCO Tech" }],
   icons: {
-    icon: "/icon?v=4",
-    shortcut: "/icon?v=4",
-    apple: "/icon?v=4",
+    icon: "/favicon.ico?v=4",
+    shortcut: "/favicon.ico?v=4",
+    apple: "/apple-touch-icon.png?v=4",
   },
 };
 
