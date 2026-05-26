@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { mockDb, Sede, Venta, Producto, getMockData } from '@/lib/supabaseClient';
+import { mockDb, Sede, Venta, Producto, getMockData, supabase, isMockMode } from '@/lib/supabaseClient';
 
 export default function SuperAdminPage() {
   const router = useRouter();
@@ -236,9 +236,34 @@ export default function SuperAdminPage() {
   // ACCIÓN: EXPORTAR REPORTE GENERAL A EXCEL (.xls con Estilo Premium)
   // Unifica las tablas de Inventario y Ventas en un solo libro
   // ==============================================================
-  const handleExportGeneralExcel = () => {
+  const handleExportGeneralExcel = async () => {
     try {
-      const data = getMockData();
+      setSuccessMsg('Consultando base de datos en tiempo real desde Supabase...');
+      
+      let data = getMockData();
+      
+      // Si estamos conectados a Supabase en Producción Cloud, consultar datos reales frescos directamente
+      if (!isMockMode && supabase) {
+        try {
+          const [sedesRes, productosRes, ventasRes] = await Promise.all([
+            supabase.from('sedes').select('*'),
+            supabase.from('productos').select('*'),
+            supabase.from('ventas').select('*')
+          ]);
+          
+          if (!sedesRes.error && !productosRes.error && !ventasRes.error) {
+            data = {
+              ...data,
+              sedes: sedesRes.data || [],
+              productos: productosRes.data || [],
+              ventas: ventasRes.data || []
+            };
+          }
+        } catch (e) {
+          console.error('Error al consultar datos en vivo para Excel:', e);
+        }
+      }
+
       const listProductos = data.productos;
       const listVentas = data.ventas;
 
