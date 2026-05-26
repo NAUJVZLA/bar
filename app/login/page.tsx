@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -19,24 +19,55 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [passError, setPassError] = useState('');
 
-  // Enviar Login Tradicional
+  // ==============================================================
+  // 1. INICIALIZACIÓN DE CREDENCIALES (MODO DEMO)
+  // Al arrancar la pantalla de login, validamos si ya existen claves guardadas
+  // en localStorage. Si no existen, establecemos los valores por defecto.
+  // ==============================================================
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Clave inicial para administrador de sede (POS y mesas)
+      if (!localStorage.getItem('alico_admin_password')) {
+        localStorage.setItem('alico_admin_password', 'admin123');
+      }
+      // Clave inicial para propietario / Super Administrador
+      if (!localStorage.getItem('alico_super_password')) {
+        localStorage.setItem('alico_super_password', 'jccg2105');
+      }
+    }
+  }, []);
+
+  // ==============================================================
+  // 2. CONTROLADOR: LOGIN TRADICIONAL (EMAIL & PASSWORD)
+  // Este controlador maneja el acceso mediante formulario manual.
+  // Verifica el correo y la contraseña contra las credenciales dinámicas.
+  // ==============================================================
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
+    // Simula una latencia de red para mejorar la experiencia de usuario (loader)
     setTimeout(() => {
       const cleanEmail = email.toLowerCase().trim();
-      if ((cleanEmail === 'superadmin@alicobar.com' || cleanEmail === 'superadmin@alcobar.com') && password === 'jccg2105') {
+      
+      // Obtenemos las contraseñas activas guardadas en localStorage
+      const storedSuperPass = typeof window !== 'undefined' ? localStorage.getItem('alico_super_password') || 'jccg2105' : 'jccg2105';
+      const storedAdminPass = typeof window !== 'undefined' ? localStorage.getItem('alico_admin_password') || 'admin123' : 'admin123';
+
+      // Validación para el perfil de Super Administrador
+      if ((cleanEmail === 'superadmin@alicobar.com' || cleanEmail === 'superadmin@alcobar.com') && password === storedSuperPass) {
         const session = {
           email: cleanEmail,
           role: 'super_admin',
           nombre: 'Juan Carlos Caridad',
-          timestamp: Date.now()
+          timestamp: Date.now() // Guardamos marca de tiempo de la sesión
         };
         localStorage.setItem('alico_session', JSON.stringify(session));
-        router.push('/super-admin');
-      } else if ((cleanEmail === 'admin@alicobar.com' || cleanEmail === 'admin@alcobar.com') && password === 'admin123') {
+        router.push('/super-admin'); // Redirección a métricas consolidadas
+      } 
+      // Validación para el perfil de Administrador de Sede
+      else if ((cleanEmail === 'admin@alicobar.com' || cleanEmail === 'admin@alcobar.com') && password === storedAdminPass) {
         const session = {
           email: cleanEmail,
           role: 'admin',
@@ -44,24 +75,36 @@ export default function LoginPage() {
           timestamp: Date.now()
         };
         localStorage.setItem('alico_session', JSON.stringify(session));
-        localStorage.setItem('alico_active_sede', 'sede-norte');
-        router.push('/dashboard');
-      } else {
+        localStorage.setItem('alico_active_sede', 'sede-norte'); // Asigna Sede Norte por defecto
+        router.push('/dashboard'); // Redirección al entorno de trabajo
+      } 
+      // Si las credenciales no coinciden, muestra error
+      else {
         setError('Credenciales incorrectas. Intenta de nuevo.');
         setIsLoading(false);
       }
     }, 800);
   };
 
-  // Enviar Clave de Perfil Seleccionado
+  // ==============================================================
+  // 3. CONTROLADOR: ACCESO RÁPIDO POR PERFIL (MODAL)
+  // Permite ingresar haciendo clic directo en el perfil y validando la clave.
+  // ==============================================================
   const handleProfilePassSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPassError('');
     setIsLoading(true);
 
     setTimeout(() => {
-      const expectedPassword = selectedProfileForPass === 'super' ? 'jccg2105' : 'admin123';
+      // Obtenemos las claves del almacenamiento local
+      const storedSuperPass = typeof window !== 'undefined' ? localStorage.getItem('alico_super_password') || 'jccg2105' : 'jccg2105';
+      const storedAdminPass = typeof window !== 'undefined' ? localStorage.getItem('alico_admin_password') || 'admin123' : 'admin123';
+      
+      // Asignamos la contraseña esperada según el perfil seleccionado
+      const expectedPassword = selectedProfileForPass === 'super' ? storedSuperPass : storedAdminPass;
+
       if (profilePassword === expectedPassword) {
+        // Inicializar sesión como Super Admin
         if (selectedProfileForPass === 'super') {
           const session = {
             email: 'superadmin@alcobar.com',
@@ -71,7 +114,9 @@ export default function LoginPage() {
           };
           localStorage.setItem('alico_session', JSON.stringify(session));
           router.push('/super-admin');
-        } else {
+        } 
+        // Inicializar sesión como Admin de Sede
+        else {
           const session = {
             email: 'admin@alcobar.com',
             role: 'admin',
@@ -89,7 +134,7 @@ export default function LoginPage() {
     }, 600);
   };
 
-  // Resetear estados del modal
+  // Limpia y resetea el modal flotante de contraseña
   const handleCloseModal = () => {
     setSelectedProfileForPass(null);
     setProfilePassword('');

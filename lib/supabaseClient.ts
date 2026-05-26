@@ -748,5 +748,74 @@ export const mockDb = {
     cierres.unshift(newCierre);
     setLocalStorage('alico_cierres', cierres);
     return newCierre;
+  },
+  resetDbToDemo: async (): Promise<void> => {
+    setLocalStorage('alico_sedes', INITIAL_SEDES);
+    setLocalStorage('alico_productos', INITIAL_PRODUCTS);
+    setLocalStorage('alico_mesas', INITIAL_MESAS);
+    setLocalStorage('alico_movimientos', INITIAL_MOVIMIENTOS);
+    setLocalStorage('alico_ventas', INITIAL_VENTAS);
+    setLocalStorage('alico_creditos', INITIAL_CREDITOS);
+    setLocalStorage('alico_prestamos', INITIAL_PRESTAMOS);
+    setLocalStorage('alico_cierres', []);
+    setLocalStorage('alico_categorias', ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Varios']);
+
+    if (!isMockMode && supabase) {
+      try {
+        await supabase.from('detalle_ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('consumos_mesa').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('mesas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('sedes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        await supabase.from('sedes').insert(INITIAL_SEDES);
+        await supabase.from('productos').insert(INITIAL_PRODUCTS);
+        await supabase.from('mesas').insert(INITIAL_MESAS.map(({ consumos, ...rest }) => rest));
+        await supabase.from('movimientos').insert(INITIAL_MOVIMIENTOS);
+        await supabase.from('ventas').insert(INITIAL_VENTAS.map(({ items, ...rest }) => rest));
+        await supabase.from('creditos').insert(INITIAL_CREDITOS);
+        await supabase.from('prestamos').insert(INITIAL_PRESTAMOS);
+      } catch (err) {
+        console.error('Error reset remote Supabase:', err);
+      }
+    }
+  },
+  clearAllData: async (): Promise<void> => {
+    const defaultSedes = [{ id: 'sede-norte', nombre: 'Licorera & Bar Alico Norte', direccion: 'Av. Principal #102' }];
+    const defaultMesas = [
+      { id: 'm1', sede_id: 'sede-norte', numero_mesa: 'Mesa 1', estado: 'DISPONIBLE' as const, cliente_nombre: '', consumos: [] },
+      { id: 'm2', sede_id: 'sede-norte', numero_mesa: 'Mesa 2', estado: 'DISPONIBLE' as const, cliente_nombre: '', consumos: [] },
+      { id: 'm3', sede_id: 'sede-norte', numero_mesa: 'Mesa 3', estado: 'DISPONIBLE' as const, cliente_nombre: '', consumos: [] },
+      { id: 'm4', sede_id: 'sede-norte', numero_mesa: 'Barra Asientos', estado: 'DISPONIBLE' as const, cliente_nombre: '', consumos: [] }
+    ];
+
+    setLocalStorage('alico_sedes', defaultSedes);
+    setLocalStorage('alico_productos', []);
+    setLocalStorage('alico_mesas', defaultMesas);
+    setLocalStorage('alico_movimientos', []);
+    setLocalStorage('alico_ventas', []);
+    setLocalStorage('alico_creditos', []);
+    setLocalStorage('alico_prestamos', []);
+    setLocalStorage('alico_cierres', []);
+    setLocalStorage('alico_categorias', ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Varios']);
+
+    if (!isMockMode && supabase) {
+      try {
+        await supabase.from('detalle_ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('consumos_mesa').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('mesas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('sedes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+        await supabase.from('sedes').insert(defaultSedes);
+        await supabase.from('mesas').insert(defaultMesas.map(({ consumos, ...rest }) => rest));
+      } catch (err) {
+        console.error('Error clear remote Supabase:', err);
+      }
+    }
   }
 };
