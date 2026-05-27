@@ -23,6 +23,23 @@ export interface Sede {
   nombre: string;
 }
 
+export interface RecetaItem {
+  insumo_id: string;
+  insumo_nombre: string;
+  cantidad: number;
+  unidad: string;
+}
+
+export interface Insumo {
+  id: string;
+  sede_id: string;
+  nombre: string;
+  unidad: string;
+  stock_actual: number;
+  stock_minimo: number;
+  costo_unitario: number;
+}
+
 export interface Producto {
   id: string;
   sede_id: string;
@@ -34,6 +51,8 @@ export interface Producto {
   stock_actual: number;
   stock_minimo: number;
   registrado_por?: string;
+  tiene_receta?: boolean;
+  receta?: RecetaItem[];
 }
 
 export interface ConsumoItem {
@@ -139,6 +158,18 @@ const INITIAL_SEDES: Sede[] = [
   { id: 'sede-centro', nombre: 'ALCO-JCCG Express Centro' }
 ];
 
+const INITIAL_INSUMOS: Insumo[] = [
+  { id: 'i1', sede_id: 'sede-norte', nombre: 'Carne de res molida', unidad: 'g', stock_actual: 3000, stock_minimo: 500, costo_unitario: 20 },
+  { id: 'i2', sede_id: 'sede-norte', nombre: 'Pan de hamburguesa', unidad: 'und', stock_actual: 25, stock_minimo: 5, costo_unitario: 500 },
+  { id: 'i3', sede_id: 'sede-norte', nombre: 'Pan de perro caliente', unidad: 'und', stock_actual: 30, stock_minimo: 5, costo_unitario: 400 },
+  { id: 'i4', sede_id: 'sede-norte', nombre: 'Salchicha Americana', unidad: 'und', stock_actual: 40, stock_minimo: 10, costo_unitario: 800 },
+  { id: 'i5', sede_id: 'sede-norte', nombre: 'Queso amarillo (tajada)', unidad: 'und', stock_actual: 40, stock_minimo: 10, costo_unitario: 300 },
+  { id: 'i6', sede_id: 'sede-norte', nombre: 'Queso mozzarella rallado', unidad: 'g', stock_actual: 1000, stock_minimo: 200, costo_unitario: 15 },
+  { id: 'i7', sede_id: 'sede-norte', nombre: 'Papas a la francesa', unidad: 'g', stock_actual: 5000, stock_minimo: 1000, costo_unitario: 8 },
+  { id: 'i8', sede_id: 'sede-norte', nombre: 'Ripio de papa', unidad: 'g', stock_actual: 1000, stock_minimo: 200, costo_unitario: 5 },
+  { id: 'i9', sede_id: 'sede-norte', nombre: 'Salsas variadas', unidad: 'ml', stock_actual: 2000, stock_minimo: 500, costo_unitario: 2 }
+];
+
 const INITIAL_PRODUCTS: Producto[] = [
   { id: 'p1', sede_id: 'sede-norte', codigo_barras: '770123456781', nombre: 'Cerveza Club Colombia Dorada', categoria: 'Cervezas', precio_compra: 3500, precio_venta: 6000, stock_actual: 48, stock_minimo: 15 },
   { id: 'p2', sede_id: 'sede-norte', codigo_barras: '770123456782', nombre: 'Cerveza Corona Extra 355ml', categoria: 'Cervezas', precio_compra: 5000, precio_venta: 9000, stock_actual: 72, stock_minimo: 24 },
@@ -150,7 +181,30 @@ const INITIAL_PRODUCTS: Producto[] = [
   { id: 'p8', sede_id: 'sede-centro', codigo_barras: '770123456785', nombre: 'Aguardiente Antioqueño Azul 750ml', categoria: 'Licores', precio_compra: 42000, precio_venta: 65000, stock_actual: 18, stock_minimo: 8 },
   { id: 'p9', sede_id: 'sede-norte', codigo_barras: '770123456786', nombre: 'Ron Medellin Añejo 3 Años 750ml', categoria: 'Licores', precio_compra: 38000, precio_venta: 58000, stock_actual: 15, stock_minimo: 6 },
   { id: 'p10', sede_id: 'sede-norte', codigo_barras: '770123456787', nombre: 'Gaseosa Coca-Cola 1.5L', categoria: 'Gaseosas', precio_compra: 4000, precio_venta: 7000, stock_actual: 30, stock_minimo: 10 },
-  { id: 'p11', sede_id: 'sede-centro', codigo_barras: '770123456787', nombre: 'Gaseosa Coca-Cola 1.5L', categoria: 'Gaseosas', precio_compra: 4000, precio_venta: 6500, stock_actual: 14, stock_minimo: 10 }
+  { id: 'p11', sede_id: 'sede-centro', codigo_barras: '770123456787', nombre: 'Gaseosa Coca-Cola 1.5L', categoria: 'Gaseosas', precio_compra: 4000, precio_venta: 6500, stock_actual: 14, stock_minimo: 10 },
+  // Comidas Rápidas (Productos con Receta)
+  { 
+    id: 'p12', sede_id: 'sede-norte', codigo_barras: 'COM-001', nombre: 'Hamburguesa Sencilla', categoria: 'Comidas', 
+    precio_compra: 0, precio_venta: 15000, stock_actual: 999, stock_minimo: 0,
+    tiene_receta: true,
+    receta: [
+      { insumo_id: 'i1', insumo_nombre: 'Carne de res molida', cantidad: 120, unidad: 'g' },
+      { insumo_id: 'i2', insumo_nombre: 'Pan de hamburguesa', cantidad: 1, unidad: 'und' },
+      { insumo_id: 'i5', insumo_nombre: 'Queso amarillo (tajada)', cantidad: 1, unidad: 'und' }
+    ]
+  },
+  { 
+    id: 'p13', sede_id: 'sede-norte', codigo_barras: 'COM-002', nombre: 'Perro Caliente Tradicional', categoria: 'Comidas', 
+    precio_compra: 0, precio_venta: 12000, stock_actual: 999, stock_minimo: 0,
+    tiene_receta: true,
+    receta: [
+      { insumo_id: 'i3', insumo_nombre: 'Pan de perro caliente', cantidad: 1, unidad: 'und' },
+      { insumo_id: 'i4', insumo_nombre: 'Salchicha Americana', cantidad: 1, unidad: 'und' },
+      { insumo_id: 'i8', insumo_nombre: 'Ripio de papa', cantidad: 30, unidad: 'g' },
+      { insumo_id: 'i6', insumo_nombre: 'Queso mozzarella rallado', cantidad: 40, unidad: 'g' },
+      { insumo_id: 'i9', insumo_nombre: 'Salsas variadas', cantidad: 20, unidad: 'ml' }
+    ]
+  }
 ];
 
 const INITIAL_MESAS: Mesa[] = [
@@ -235,6 +289,7 @@ const setLocalStorage = (key: string, value: any): void => {
 
 export interface MockDataStore {
   sedes: Sede[];
+  insumos: Insumo[];
   productos: Producto[];
   mesas: Mesa[];
   movimientos: Movimiento[];
@@ -280,6 +335,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     console.log('🔄 [Alico Sync] Descargando base de datos desde Supabase...');
     const [
       sedesRes,
+      insumosRes,
       productosRes,
       mesasRes,
       movimientosRes,
@@ -289,6 +345,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       cierresRes
     ] = await Promise.all([
       supabase.from('sedes').select('*'),
+      supabase.from('insumos').select('*'),
       supabase.from('productos').select('*'),
       supabase.from('mesas').select('*'),
       supabase.from('movimientos').select('*'),
@@ -299,6 +356,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     ]);
 
     if (sedesRes.error) throw sedesRes.error;
+    if (insumosRes.error) throw insumosRes.error;
     if (productosRes.error) throw productosRes.error;
     if (mesasRes.error) throw mesasRes.error;
     if (movimientosRes.error) throw movimientosRes.error;
@@ -309,6 +367,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
 
     // Actualizar caché local instantáneamente
     setLocalStorage('alico_sedes', sedesRes.data || []);
+    setLocalStorage('alico_insumos', insumosRes.data || []);
     setLocalStorage('alico_productos', productosRes.data || []);
     setLocalStorage('alico_mesas', mesasRes.data || []);
     setLocalStorage('alico_movimientos', movimientosRes.data || []);
@@ -335,6 +394,7 @@ export const getMockData = (): MockDataStore => {
 
   return {
     sedes: getLocalStorage<Sede[]>('alico_sedes', INITIAL_SEDES),
+    insumos: getLocalStorage<Insumo[]>('alico_insumos', INITIAL_INSUMOS),
     productos: getLocalStorage<Producto[]>('alico_productos', INITIAL_PRODUCTS),
     mesas: safeMesas,
     movimientos: getLocalStorage<Movimiento[]>('alico_movimientos', INITIAL_MOVIMIENTOS),
@@ -349,6 +409,10 @@ export const saveMockData = (newData: Partial<MockDataStore>): void => {
   if (newData.sedes) {
     setLocalStorage('alico_sedes', newData.sedes);
     syncTableToSupabase('sedes');
+  }
+  if (newData.insumos) {
+    setLocalStorage('alico_insumos', newData.insumos);
+    syncTableToSupabase('insumos');
   }
   if (newData.productos) {
     setLocalStorage('alico_productos', newData.productos);
@@ -386,8 +450,6 @@ export const saveMockData = (newData: Partial<MockDataStore>): void => {
 export const mockDb = {
   getSedes: (): Sede[] => {
     const sedes = getMockData().sedes;
-    // Ocultar 'sede-centro' (Alico Express Centro) para dejar activa solo la sede con más mesas ('sede-norte').
-    // Si en el futuro es necesario habilitarla, solo basta con remover este filtro.
     return sedes.filter(s => s.id !== 'sede-centro');
   },
   addSede: (sede: Omit<Sede, 'id'>): Sede => {
@@ -397,6 +459,49 @@ export const mockDb = {
     saveMockData(data);
     return newSede;
   },
+
+  // --- INSUMOS ---
+  getInsumos: (sedeId?: string): Insumo[] => {
+    const insumos = getMockData().insumos;
+    return sedeId ? insumos.filter(i => i.sede_id === sedeId) : insumos;
+  },
+  saveInsumo: (insumo: Partial<Insumo> & { sede_id: string; nombre: string; stock_actual: number; unidad: string }): Insumo => {
+    const data = getMockData();
+    let result: Insumo;
+    if (insumo.id) {
+      const idx = data.insumos.findIndex(i => i.id === insumo.id);
+      if (idx !== -1) {
+        data.insumos[idx] = { ...data.insumos[idx], ...insumo } as Insumo;
+        result = data.insumos[idx];
+      } else {
+        throw new Error('Insumo no encontrado');
+      }
+    } else {
+      const newId = 'i-' + Date.now();
+      const newInsumo: Insumo = { 
+        id: newId, 
+        nombre: insumo.nombre,
+        unidad: insumo.unidad,
+        stock_actual: insumo.stock_actual,
+        stock_minimo: insumo.stock_minimo || 5,
+        costo_unitario: insumo.costo_unitario || 0,
+        sede_id: insumo.sede_id
+      };
+      data.insumos.push(newInsumo);
+      result = newInsumo;
+    }
+    saveMockData(data);
+    return result;
+  },
+  deleteInsumo: (id: string): boolean => {
+    const data = getMockData();
+    data.insumos = data.insumos.filter(i => i.id !== id);
+    saveMockData(data);
+    deleteFromSupabase('insumos', id);
+    return true;
+  },
+
+  // --- PRODUCTOS ---
   getProductos: (sedeId?: string): Producto[] => {
     const prods = getMockData().productos;
     return sedeId ? prods.filter(p => p.sede_id === sedeId) : prods;
@@ -409,7 +514,8 @@ export const mockDb = {
       if (idx !== -1) {
         const oldStock = data.productos[idx].stock_actual;
         const diff = prod.stock_actual - oldStock;
-        if (diff !== 0) {
+        // Solo registrar movimiento de inventario si no es una comida preparada con receta (es decir, stock físico real)
+        if (diff !== 0 && !prod.tiene_receta) {
           const type = diff > 0 ? 'INGRESO' : 'EGRESO';
           data.movimientos.unshift({
             id: 'mov-' + Date.now(),
@@ -439,20 +545,25 @@ export const mockDb = {
         precio_venta: prod.precio_venta || 0,
         stock_actual: prod.stock_actual,
         stock_minimo: prod.stock_minimo || 5,
-        sede_id: prod.sede_id
+        sede_id: prod.sede_id,
+        tiene_receta: prod.tiene_receta || false,
+        receta: prod.receta || []
       };
       data.productos.push(newProd);
-      data.movimientos.unshift({
-        id: 'mov-' + Date.now(),
-        producto_id: newId,
-        producto_nombre: newProd.nombre,
-        sede_id: newProd.sede_id,
-        tipo: 'INGRESO',
-        cantidad: newProd.stock_actual,
-        motivo: 'Registro inicial de producto',
-        registrado_por: prod.registrado_por || 'Sistema',
-        fecha_hora: new Date().toISOString()
-      });
+      
+      if (!newProd.tiene_receta) {
+        data.movimientos.unshift({
+          id: 'mov-' + Date.now(),
+          producto_id: newId,
+          producto_nombre: newProd.nombre,
+          sede_id: newProd.sede_id,
+          tipo: 'INGRESO',
+          cantidad: newProd.stock_actual,
+          motivo: 'Registro inicial de producto',
+          registrado_por: prod.registrado_por || 'Sistema',
+          fecha_hora: new Date().toISOString()
+        });
+      }
       result = newProd;
     }
     saveMockData(data);
@@ -465,6 +576,8 @@ export const mockDb = {
     deleteFromSupabase('productos', id);
     return true;
   },
+
+  // --- MESAS Y CONSUMOS ---
   getMesas: (sedeId?: string): Mesa[] => {
     const mesas = getMockData().mesas;
     return sedeId ? mesas.filter(m => m.sede_id === sedeId) : mesas;
@@ -485,6 +598,35 @@ export const mockDb = {
     }
     return null;
   },
+  
+  // FUNCION AUXILIAR PARA RECETAS
+  _descontarInsumosReceta: (data: MockDataStore, producto: Producto, cantidad: number) => {
+    if (producto.tiene_receta && producto.receta && producto.receta.length > 0) {
+      producto.receta.forEach(itemReceta => {
+        const insumoIdx = data.insumos.findIndex(i => i.id === itemReceta.insumo_id);
+        if (insumoIdx !== -1) {
+          const cantidadARestar = itemReceta.cantidad * cantidad;
+          if (data.insumos[insumoIdx].stock_actual < cantidadARestar) {
+             console.warn(`Alerta: Stock de insumo ${data.insumos[insumoIdx].nombre} puede quedar negativo.`);
+          }
+          data.insumos[insumoIdx].stock_actual -= cantidadARestar;
+        }
+      });
+    }
+  },
+
+  _reintegrarInsumosReceta: (data: MockDataStore, producto: Producto, cantidad: number) => {
+    if (producto.tiene_receta && producto.receta && producto.receta.length > 0) {
+      producto.receta.forEach(itemReceta => {
+        const insumoIdx = data.insumos.findIndex(i => i.id === itemReceta.insumo_id);
+        if (insumoIdx !== -1) {
+          const cantidadASumar = itemReceta.cantidad * cantidad;
+          data.insumos[insumoIdx].stock_actual += cantidadASumar;
+        }
+      });
+    }
+  },
+
   agregarConsumoMesa: (mesaId: string, producto: Producto, cantidad: number, atendidoPor: string): Mesa | null => {
     const data = getMockData();
     const idx = data.mesas.findIndex(m => m.id === mesaId);
@@ -493,21 +635,29 @@ export const mockDb = {
       
       const prodIdx = data.productos.findIndex(p => p.id === producto.id);
       if (prodIdx !== -1) {
-        if (data.productos[prodIdx].stock_actual < cantidad) {
-          throw new Error(`Stock insuficiente. Solo quedan ${data.productos[prodIdx].stock_actual} unidades.`);
+        const prodActual = data.productos[prodIdx];
+
+        if (prodActual.tiene_receta) {
+          // Es Comida: descontamos insumos
+          mockDb._descontarInsumosReceta(data, prodActual, cantidad);
+        } else {
+          // Es Bebida/Varios: descontamos stock normal
+          if (prodActual.stock_actual < cantidad) {
+            throw new Error(`Stock insuficiente. Solo quedan ${prodActual.stock_actual} unidades.`);
+          }
+          prodActual.stock_actual -= cantidad;
+          data.movimientos.unshift({
+            id: 'mov-' + Date.now(),
+            producto_id: producto.id,
+            producto_nombre: producto.nombre,
+            sede_id: mesa.sede_id,
+            tipo: 'EGRESO',
+            cantidad: cantidad,
+            motivo: `Consumo en ${mesa.numero_mesa}`,
+            registrado_por: atendidoPor,
+            fecha_hora: new Date().toISOString()
+          });
         }
-        data.productos[prodIdx].stock_actual -= cantidad;
-        data.movimientos.unshift({
-          id: 'mov-' + Date.now(),
-          producto_id: producto.id,
-          producto_nombre: producto.nombre,
-          sede_id: mesa.sede_id,
-          tipo: 'EGRESO',
-          cantidad: cantidad,
-          motivo: `Consumo en ${mesa.numero_mesa}`,
-          registrado_por: atendidoPor,
-          fecha_hora: new Date().toISOString()
-        });
       }
 
       const consumoExistente = mesa.consumos.find(c => c.producto_id === producto.id);
@@ -529,6 +679,7 @@ export const mockDb = {
     }
     return null;
   },
+
   cancelarConsumoMesa: (mesaId: string, consumoId: string, atendidoPor: string): Mesa | null => {
     const data = getMockData();
     const mesaIdx = data.mesas.findIndex(m => m.id === mesaId);
@@ -540,18 +691,26 @@ export const mockDb = {
         
         const prodIdx = data.productos.findIndex(p => p.id === cons.producto_id);
         if (prodIdx !== -1) {
-          data.productos[prodIdx].stock_actual += cons.cantidad;
-          data.movimientos.unshift({
-            id: 'mov-' + Date.now(),
-            producto_id: cons.producto_id,
-            producto_nombre: cons.nombre,
-            sede_id: mesa.sede_id,
-            tipo: 'INGRESO',
-            cantidad: cons.cantidad,
-            motivo: `Cancelación/Reintegro de consumo de ${mesa.numero_mesa}`,
-            registrado_por: atendidoPor,
-            fecha_hora: new Date().toISOString()
-          });
+          const prodActual = data.productos[prodIdx];
+          
+          if (prodActual.tiene_receta) {
+             // Es Comida: reintegramos insumos
+             mockDb._reintegrarInsumosReceta(data, prodActual, cons.cantidad);
+          } else {
+             // Es Bebida: reintegramos stock normal
+             prodActual.stock_actual += cons.cantidad;
+             data.movimientos.unshift({
+               id: 'mov-' + Date.now(),
+               producto_id: cons.producto_id,
+               producto_nombre: cons.nombre,
+               sede_id: mesa.sede_id,
+               tipo: 'INGRESO',
+               cantidad: cons.cantidad,
+               motivo: `Cancelación/Reintegro de consumo de ${mesa.numero_mesa}`,
+               registrado_por: atendidoPor,
+               fecha_hora: new Date().toISOString()
+             });
+          }
         }
 
         mesa.consumos.splice(consIdx, 1);
@@ -565,6 +724,8 @@ export const mockDb = {
     }
     return null;
   },
+
+  // --- VENTAS ---
   getVentas: (sedeId?: string): Venta[] => {
     const ventas = getMockData().ventas;
     return sedeId ? ventas.filter(v => v.sede_id === sedeId) : ventas;
@@ -581,21 +742,27 @@ export const mockDb = {
       newVenta.items.forEach(item => {
         const prodIdx = data.productos.findIndex(p => p.id === item.producto_id);
         if (prodIdx !== -1) {
-          if (data.productos[prodIdx].stock_actual < item.cantidad) {
-            throw new Error(`Stock insuficiente para ${item.nombre}.`);
+          const prodActual = data.productos[prodIdx];
+          
+          if (prodActual.tiene_receta) {
+             mockDb._descontarInsumosReceta(data, prodActual, item.cantidad);
+          } else {
+            if (prodActual.stock_actual < item.cantidad) {
+              throw new Error(`Stock insuficiente para ${item.nombre}.`);
+            }
+            prodActual.stock_actual -= item.cantidad;
+            data.movimientos.unshift({
+              id: 'mov-' + Date.now() + '-' + item.producto_id,
+              producto_id: item.producto_id,
+              producto_nombre: item.nombre,
+              sede_id: venta.sede_id,
+              tipo: 'EGRESO',
+              cantidad: item.cantidad,
+              motivo: 'Venta Directa POS',
+              registrado_por: venta.atendido_por,
+              fecha_hora: new Date().toISOString()
+            });
           }
-          data.productos[prodIdx].stock_actual -= item.cantidad;
-          data.movimientos.unshift({
-            id: 'mov-' + Date.now() + '-' + item.producto_id,
-            producto_id: item.producto_id,
-            producto_nombre: item.nombre,
-            sede_id: venta.sede_id,
-            tipo: 'EGRESO',
-            cantidad: item.cantidad,
-            motivo: 'Venta Directa POS',
-            registrado_por: venta.atendido_por,
-            fecha_hora: new Date().toISOString()
-          });
         }
       });
     }
@@ -623,12 +790,13 @@ export const mockDb = {
     saveMockData(data);
     return newVenta;
   },
+  
   getMovimientos: (sedeId?: string): Movimiento[] => {
     const movs = getMockData().movimientos;
     return sedeId ? movs.filter(m => m.sede_id === sedeId) : movs;
   },
   getCategorias: (): string[] => {
-    const defaultCats = ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Varios'];
+    const defaultCats = ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios'];
     return getLocalStorage<string[]>('alico_categorias', defaultCats);
   },
   addCategoria: (categoria: string): string[] => {
@@ -766,6 +934,7 @@ export const mockDb = {
   },
   resetDbToDemo: async (): Promise<void> => {
     setLocalStorage('alico_sedes', INITIAL_SEDES);
+    setLocalStorage('alico_insumos', INITIAL_INSUMOS);
     setLocalStorage('alico_productos', INITIAL_PRODUCTS);
     setLocalStorage('alico_mesas', INITIAL_MESAS);
     setLocalStorage('alico_movimientos', INITIAL_MOVIMIENTOS);
@@ -773,7 +942,7 @@ export const mockDb = {
     setLocalStorage('alico_creditos', INITIAL_CREDITOS);
     setLocalStorage('alico_prestamos', INITIAL_PRESTAMOS);
     setLocalStorage('alico_cierres', []);
-    setLocalStorage('alico_categorias', ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Varios']);
+    setLocalStorage('alico_categorias', ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios']);
 
     if (!isMockMode && supabase) {
       try {
@@ -784,9 +953,11 @@ export const mockDb = {
         await supabase.from('consumos_mesa').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('mesas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('insumos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('sedes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
         await supabase.from('sedes').insert(INITIAL_SEDES);
+        await supabase.from('insumos').insert(INITIAL_INSUMOS);
         await supabase.from('productos').insert(INITIAL_PRODUCTS);
         await supabase.from('mesas').insert(INITIAL_MESAS.map(({ consumos, ...rest }) => rest));
         await supabase.from('movimientos').insert(INITIAL_MOVIMIENTOS);
@@ -799,7 +970,6 @@ export const mockDb = {
     }
   },
   clearAllData: async (): Promise<void> => {
-    // En local: limpiar consumos de las mesas y resetear estado a DISPONIBLE, pero no borrarlas
     const currentMesas = getLocalStorage<Mesa[]>('alico_mesas', []);
     const clearedMesas = currentMesas.map(m => ({
       ...m,
@@ -808,6 +978,7 @@ export const mockDb = {
       consumos: []
     }));
 
+    setLocalStorage('alico_insumos', []);
     setLocalStorage('alico_productos', []);
     setLocalStorage('alico_mesas', clearedMesas);
     setLocalStorage('alico_movimientos', []);
@@ -815,25 +986,23 @@ export const mockDb = {
     setLocalStorage('alico_creditos', []);
     setLocalStorage('alico_prestamos', []);
     setLocalStorage('alico_cierres', []);
-    setLocalStorage('alico_categorias', ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Varios']);
+    setLocalStorage('alico_categorias', ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios']);
 
     if (!isMockMode && supabase) {
       try {
-        // Borrar tablas transaccionales y de productos
         await supabase.from('cierres').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('detalle_ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('consumos_mesa').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         
-        // Limpiar los consumos de las mesas en Supabase (reiniciar estado a DISPONIBLE), pero no borrarlas
         await supabase.from('mesas').update({
           estado: 'DISPONIBLE',
           cliente_nombre: ''
         }).neq('id', '00000000-0000-0000-0000-000000000000');
         
-        // Borrar productos
         await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('insumos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       } catch (err) {
         console.error('Error clear remote Supabase:', err);
       }
