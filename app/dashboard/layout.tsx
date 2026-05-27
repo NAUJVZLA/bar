@@ -55,7 +55,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     // 4. Inicializar Motor de Sincronización Supabase Cloud (Offline-First Cache)
-    import('@/lib/supabaseClient').then(async ({ isMockMode, syncFromSupabase }) => {
+    import('@/lib/supabaseClient').then(async ({ isMockMode, syncFromSupabase, initRealtimeSync }) => {
       if (isMockMode) {
         setSyncStatus('demo');
       } else {
@@ -63,6 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         const success = await syncFromSupabase();
         if (success) {
           setSyncStatus('synced');
+          initRealtimeSync(); // Activar escucha en tiempo real
           // Recargar sedes y sede activa tras sincronización exitosa
           const freshSedes = mockDb.getSedes();
           setSedes(freshSedes);

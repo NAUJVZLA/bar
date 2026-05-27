@@ -239,9 +239,9 @@ export default function SuperAdminPage() {
   const handleExportGeneralExcel = async () => {
     try {
       setSuccessMsg('Consultando base de datos en tiempo real desde Supabase...');
-      
+
       let data = getMockData();
-      
+
       // Si estamos conectados a Supabase en Producción Cloud, consultar datos reales frescos directamente
       if (!isMockMode && supabase) {
         try {
@@ -250,7 +250,7 @@ export default function SuperAdminPage() {
             supabase.from('productos').select('*'),
             supabase.from('ventas').select('*')
           ]);
-          
+
           if (!sedesRes.error && !productosRes.error && !ventasRes.error) {
             data = {
               ...data,
@@ -602,102 +602,102 @@ export default function SuperAdminPage() {
 
           {/* Lado Derecho (1 span): Formularios de Creación */}
           <div className="lg:col-span-1 space-y-6">
-
-            {/* Formulario Crear Sede */}
+            {/* elimine el formulario de creart sede  */}
+            {/* Formulario Crear Sede
             <div className="glass-card rounded-2xl p-5 border border-white/5">
               <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-4">
                 Provisionar Sede (Local)
               </h3>
 
               <form onSubmit={handleCreateSede} className="space-y-4">
-                <div>
-                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
-                    Nombre del Local
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={nombreSede}
-                    onChange={(e) => setNombreSede(e.target.value)}
-                    placeholder="Ej. Alico VIP Club"
-                    className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
-                  />
-                </div>
-
-
-
-                <button
-                  type="submit"
-                  className="w-full h-9 rounded-lg btn-gold text-xs font-bold transition-all"
-                >
-                  Registrar Nueva Sede
-                </button>
-              </form>
-            </div>
-
-            {/* Formulario Asignar Admin Sede */}
-            <div className="glass-card rounded-2xl p-5 border border-white/5">
-              <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-4">
-                Crear Cliente / Administrador
-              </h3>
-
-              <form onSubmit={handleCreateAdmin} className="space-y-4">
-                <div>
-                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
-                    Nombre Completo
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={adminNombre}
-                    onChange={(e) => setAdminNombre(e.target.value)}
-                    placeholder="Ej. Andrés Gómez"
-                    className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
-                    Email de Ingreso
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={adminEmail}
-                    onChange={(e) => setAdminEmail(e.target.value)}
-                    placeholder="admin@alicobar.com"
-                    className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
-                    Contraseña por defecto
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    disabled
-                    value={adminPassword}
-                    className="w-full h-9 px-3 rounded-lg glass-input text-xs text-zinc-500 opacity-60"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full h-9 rounded-lg btn-gold text-xs font-bold transition-all"
-                >
-                  Provisionar Acceso Admin
-                </button>
-              </form>
-            </div>
-
+                <div> */}
+            <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+              Nombre del Local
+            </label>
+            <input
+              type="text"
+              required
+              value={nombreSede}
+              onChange={(e) => setNombreSede(e.target.value)}
+              placeholder="Ej. Alico VIP Club"
+              className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
+            />
           </div>
 
-        </div>
 
-        {/* Sección: Base de Datos & Seguridad */}
-        <section className="glass-panel border border-white/5 rounded-2xl p-6 relative overflow-hidden space-y-6">
+
+          <button
+            type="submit"
+            className="w-full h-9 rounded-lg btn-gold text-xs font-bold transition-all"
+          >
+            Registrar Nueva Sede
+          </button>
+        </form>
+      </div>
+
+      {/* Formulario Asignar Admin Sede */}
+      <div className="glass-card rounded-2xl p-5 border border-white/5">
+        <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-4">
+          Crear Cliente / Administrador
+        </h3>
+
+        <form onSubmit={handleCreateAdmin} className="space-y-4">
+          <div>
+            <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+              Nombre Completo
+            </label>
+            <input
+              type="text"
+              required
+              value={adminNombre}
+              onChange={(e) => setAdminNombre(e.target.value)}
+              placeholder="Ej. Andrés Gómez"
+              className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+              Email de Ingreso
+            </label>
+            <input
+              type="email"
+              required
+              value={adminEmail}
+              onChange={(e) => setAdminEmail(e.target.value)}
+              placeholder="admin@alicobar.com"
+              className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+              Contraseña por defecto
+            </label>
+            <input
+              type="password"
+              required
+              disabled
+              value={adminPassword}
+              className="w-full h-9 px-3 rounded-lg glass-input text-xs text-zinc-500 opacity-60"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full h-9 rounded-lg btn-gold text-xs font-bold transition-all"
+          >
+            Provisionar Acceso Admin
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+        </div >
+
+    {/* Sección: Base de Datos & Seguridad */ }
+    < section className = "glass-panel border border-white/5 rounded-2xl p-6 relative overflow-hidden space-y-6" >
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-500/20 via-red-500/40 to-transparent"></div>
 
           <div>
@@ -809,76 +809,78 @@ export default function SuperAdminPage() {
             </div>
 
           </div>
-        </section>
+        </section >
 
-      </div>
+      </div >
 
-      {/* Modal de Confirmación de Seguridad */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
-          <div className="glass-card border border-red-500/25 shadow-2xl shadow-red-500/5 rounded-3xl p-6 md:p-8 w-full max-w-sm relative overflow-hidden bg-[#06060c]/95 text-center">
+    {/* Modal de Confirmación de Seguridad */ }
+  {
+    showConfirmModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in">
+        <div className="glass-card border border-red-500/25 shadow-2xl shadow-red-500/5 rounded-3xl p-6 md:p-8 w-full max-w-sm relative overflow-hidden bg-[#06060c]/95 text-center">
 
-            <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl opacity-20 pointer-events-none bg-red-500"></div>
+          <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl opacity-20 pointer-events-none bg-red-500"></div>
 
-            <div className="flex justify-center mb-4">
-              <div className="h-14 w-14 rounded-2xl flex items-center justify-center border bg-red-500/10 text-red-400 border-red-500/20 shadow-red-500/10">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-7 h-7">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
+          <div className="flex justify-center mb-4">
+            <div className="h-14 w-14 rounded-2xl flex items-center justify-center border bg-red-500/10 text-red-400 border-red-500/20 shadow-red-500/10">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-7 h-7">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
             </div>
-
-            <h3 className="text-lg font-bold text-white mb-2">¿Estás absolutamente seguro?</h3>
-            <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
-              {confirmAction === 'reset'
-                ? 'Esto restablecerá la base de datos a sus valores iniciales de prueba (perderás todas las ventas y cambios recientes).'
-                : 'Esta acción borrará de forma permanente todos los productos, ventas, arqueos de caja, deudas de cartera y préstamos de envases. Tus locales físicos (sedes) y mesas configuradas quedarán protegidas e intactas. Se recomienda descargar un respaldo antes de continuar.'}
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-left mb-1.5 pl-1">
-                  Escribe <span className="text-red-400 font-black">BORRAR</span> en mayúsculas para confirmar:
-                </label>
-                <input
-                  type="text"
-                  autoFocus
-                  required
-                  value={confirmText}
-                  onChange={(e) => setConfirmText(e.target.value)}
-                  placeholder="BORRAR"
-                  className="w-full h-10 px-3 rounded-xl glass-input text-xs text-white text-center font-bold tracking-widest focus:ring-red-500"
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={handleExecuteDbAction}
-                  disabled={confirmText !== 'BORRAR'}
-                  className="w-full h-10 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-30 disabled:hover:bg-red-500 text-black text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/10 cursor-pointer"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                  </svg>
-                  Confirmar y Eliminar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowConfirmModal(false);
-                    setConfirmAction(null);
-                    setConfirmText('');
-                  }}
-                  className="w-full h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-300 hover:text-white text-xs font-bold transition-all"
-                >
-                  Cancelar
-                </button>
-              </div>
-            </div>
-
           </div>
+
+          <h3 className="text-lg font-bold text-white mb-2">¿Estás absolutamente seguro?</h3>
+          <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
+            {confirmAction === 'reset'
+              ? 'Esto restablecerá la base de datos a sus valores iniciales de prueba (perderás todas las ventas y cambios recientes).'
+              : 'Esta acción borrará de forma permanente todos los productos, ventas, arqueos de caja, deudas de cartera y préstamos de envases. Tus locales físicos (sedes) y mesas configuradas quedarán protegidas e intactas. Se recomienda descargar un respaldo antes de continuar.'}
+          </p>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-widest text-left mb-1.5 pl-1">
+                Escribe <span className="text-red-400 font-black">BORRAR</span> en mayúsculas para confirmar:
+              </label>
+              <input
+                type="text"
+                autoFocus
+                required
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+                placeholder="BORRAR"
+                className="w-full h-10 px-3 rounded-xl glass-input text-xs text-white text-center font-bold tracking-widest focus:ring-red-500"
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={handleExecuteDbAction}
+                disabled={confirmText !== 'BORRAR'}
+                className="w-full h-10 rounded-xl bg-red-500 hover:bg-red-600 disabled:opacity-30 disabled:hover:bg-red-500 text-black text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/10 cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+                Confirmar y Eliminar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirmModal(false);
+                  setConfirmAction(null);
+                  setConfirmText('');
+                }}
+                className="w-full h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-300 hover:text-white text-xs font-bold transition-all"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+
         </div>
-      )}
-    </div>
+      </div>
+    )
+  }
+    </div >
   );
 }

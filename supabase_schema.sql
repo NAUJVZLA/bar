@@ -10,10 +10,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 DROP TABLE IF EXISTS creditos CASCADE;
 DROP TABLE IF EXISTS prestamos CASCADE;
 DROP TABLE IF EXISTS cierres CASCADE;
-DROP TABLE IF EXISTS detalle_ventas CASCADE;
+DROP TABLE IF EXISTS detalle_ventas CASCADE; -- Obsoleta (reemplazada por JSONB en ventas)
 DROP TABLE IF EXISTS ventas CASCADE;
 DROP TABLE IF EXISTS movimientos CASCADE;
-DROP TABLE IF EXISTS consumos_mesa CASCADE;
+DROP TABLE IF EXISTS consumos_mesa CASCADE; -- Obsoleta (reemplazada por JSONB en mesas)
 DROP TABLE IF EXISTS mesas CASCADE;
 DROP TABLE IF EXISTS productos CASCADE;
 DROP TABLE IF EXISTS insumos CASCADE;
@@ -66,22 +66,11 @@ CREATE TABLE mesas (
     numero_mesa VARCHAR(50) NOT NULL,
     estado VARCHAR(20) DEFAULT 'DISPONIBLE' CHECK (estado IN ('DISPONIBLE', 'OCUPADA', 'PAGANDO')),
     cliente_nombre VARCHAR(100) DEFAULT '',
+    consumos JSONB DEFAULT '[]'::jsonb, -- Ahora los pedidos viven íntegramente en la mesa
     creado_en TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
--- 5. TABLA CONSUMOS_MESA (Items actuales en cada mesa)
-CREATE TABLE consumos_mesa (
-    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
-    mesa_id VARCHAR(100) NOT NULL REFERENCES mesas(id) ON DELETE CASCADE,
-    producto_id VARCHAR(100) NOT NULL REFERENCES productos(id),
-    nombre VARCHAR(150) NOT NULL,
-    cantidad INTEGER NOT NULL,
-    precio_unitario NUMERIC(12, 2) NOT NULL,
-    registrado_por VARCHAR(100) NOT NULL,
-    fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- 6. TABLA MOVIMIENTOS (Historial de Inventario de Productos terminados)
+-- 6. TABLA MOVIMIENTOS (Historial de Inventario)
 CREATE TABLE movimientos (
     id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
     sede_id VARCHAR(100) NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
@@ -103,17 +92,8 @@ CREATE TABLE ventas (
     metodo_pago VARCHAR(50) DEFAULT 'EFECTIVO',
     atendido_por VARCHAR(100) NOT NULL,
     es_directa BOOLEAN DEFAULT FALSE,
+    items JSONB DEFAULT '[]'::jsonb, -- Ahora los detalles de venta viven íntegramente en la venta
     fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- 8. TABLA DETALLE_VENTAS (Items de la venta finalizada)
-CREATE TABLE detalle_ventas (
-    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
-    venta_id VARCHAR(100) NOT NULL REFERENCES ventas(id) ON DELETE CASCADE,
-    producto_id VARCHAR(100) NOT NULL REFERENCES productos(id),
-    nombre VARCHAR(150) NOT NULL,
-    cantidad INTEGER NOT NULL,
-    precio_unitario NUMERIC(12, 2) NOT NULL
 );
 
 -- 9. TABLA CREDITOS (Fiados)
@@ -173,30 +153,41 @@ ALTER TABLE sedes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE productos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE insumos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE mesas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE consumos_mesa ENABLE ROW LEVEL SECURITY;
 ALTER TABLE movimientos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ventas ENABLE ROW LEVEL SECURITY;
-ALTER TABLE detalle_ventas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE creditos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prestamos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cierres ENABLE ROW LEVEL SECURITY;
 
--- Por ahora, permitimos lectura/escritura anónima desde nuestra app
--- (Requiere la "Anon Key" pública). En producción seria ideal limitar por usuario auth.
+-- Permisos
 CREATE POLICY "Acceso total sedes" ON sedes FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total productos" ON productos FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total insumos" ON insumos FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total mesas" ON mesas FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Acceso total consumos" ON consumos_mesa FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total movimientos" ON movimientos FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total ventas" ON ventas FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY "Acceso total detalle_ventas" ON detalle_ventas FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total creditos" ON creditos FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total prestamos" ON prestamos FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total cierres" ON cierres FOR ALL USING (true) WITH CHECK (true);
 
--- NOTA: Si en el futuro quieres habilitar Supabase Realtime, ejecuta lo siguiente:
--- ALTER PUBLICATION supabase_realtime ADD TABLE mesas;
--- ALTER PUBLICATION supabase_realtime ADD TABLE consumos_mesa;
--- ALTER PUBLICATION supabase_realtime ADD TABLE productos;
--- ALTER PUBLICATION supabase_realtime ADD TABLE insumos;
+-- ==============================================================
+-- SUPABASE REALTIME (WebSockets)
+-- Permite que los computadores escuchen cambios en tiempo real
+-- ==============================================================
+BEGIN;
+  -- Borrar publication si existe para evitar errores
+  DROP PUBLICATION IF EXISTS supabase_realtime;
+  -- Crear publication
+  CREATE PUBLICATION supabase_realtime;
+COMMIT;
+
+ALTER PUBLICATION supabase_realtime ADD TABLE mesas;
+ALTER PUBLICATION supabase_realtime ADD TABLE ventas;
+ALTER PUBLICATION supabase_realtime ADD TABLE movimientos;
+ALTER PUBLICATION supabase_realtime ADD TABLE productos;
+ALTER PUBLICATION supabase_realtime ADD TABLE insumos;
+
+-- Identity Full asegura que se manden todos los datos en el payload (útil para updates)
+ALTER TABLE mesas REPLICA IDENTITY FULL;
+ALTER TABLE ventas REPLICA IDENTITY FULL;
+ALTER TABLE movimientos REPLICA IDENTITY FULL;

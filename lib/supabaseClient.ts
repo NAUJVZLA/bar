@@ -378,11 +378,41 @@ export const syncFromSupabase = async (): Promise<boolean> => {
 
     console.log('🟢 [Alico Sync] Base de datos local sincronizada con la nube.');
     window.dispatchEvent(new Event('supabase_synced'));
+    // Despachamos sedeChanged para que las UI recarguen los datos frescos
+    window.dispatchEvent(new Event('sedeChanged'));
     return true;
   } catch (err) {
     console.error('❌ [Alico Sync] Error de red al sincronizar desde Supabase. Usando caché local offline:', err);
     return false;
   }
+};
+
+let realtimeChannel: any = null;
+
+export const initRealtimeSync = () => {
+  if (isMockMode || !supabase) return;
+  
+  // Evitar suscripciones duplicadas
+  if (realtimeChannel) return realtimeChannel;
+  
+  realtimeChannel = supabase.channel('public:alico_sync');
+  
+  realtimeChannel.on(
+    'postgres_changes',
+    { event: '*', schema: 'public' },
+    (payload: any) => {
+      console.log('🔄 [Alico Realtime] Cambio detectado en la nube:', payload);
+      // Para mantener la consistencia perfecta, descargamos el estado fresco.
+      // Así aseguramos que mesas y ventas estén 100% igual al servidor.
+      syncFromSupabase();
+    }
+  ).subscribe((status: string) => {
+    if (status === 'SUBSCRIBED') {
+      console.log('🟢 [Alico Realtime] Conectado a WebSockets. Escuchando cambios en vivo.');
+    }
+  });
+  
+  return realtimeChannel;
 };
 
 export const getMockData = (): MockDataStore => {
@@ -947,10 +977,8 @@ export const mockDb = {
     if (!isMockMode && supabase) {
       try {
         await supabase.from('cierres').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('detalle_ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('consumos_mesa').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('mesas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('insumos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -959,9 +987,9 @@ export const mockDb = {
         await supabase.from('sedes').insert(INITIAL_SEDES);
         await supabase.from('insumos').insert(INITIAL_INSUMOS);
         await supabase.from('productos').insert(INITIAL_PRODUCTS);
-        await supabase.from('mesas').insert(INITIAL_MESAS.map(({ consumos, ...rest }) => rest));
+        await supabase.from('mesas').insert(INITIAL_MESAS);
         await supabase.from('movimientos').insert(INITIAL_MOVIMIENTOS);
-        await supabase.from('ventas').insert(INITIAL_VENTAS.map(({ items, ...rest }) => rest));
+        await supabase.from('ventas').insert(INITIAL_VENTAS);
         await supabase.from('creditos').insert(INITIAL_CREDITOS);
         await supabase.from('prestamos').insert(INITIAL_PRESTAMOS);
       } catch (err) {
@@ -991,14 +1019,13 @@ export const mockDb = {
     if (!isMockMode && supabase) {
       try {
         await supabase.from('cierres').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('detalle_ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('consumos_mesa').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         
         await supabase.from('mesas').update({
           estado: 'DISPONIBLE',
-          cliente_nombre: ''
+          cliente_nombre: '',
+          consumos: []
         }).neq('id', '00000000-0000-0000-0000-000000000000');
         
         await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
