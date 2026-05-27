@@ -601,41 +601,7 @@ export default function SuperAdminPage() {
           </div>
 
           {/* Lado Derecho (1 span): Formularios de Creación */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* elimine el formulario de creart sede  */}
-            {/* Formulario Crear Sede
-            <div className="glass-card rounded-2xl p-5 border border-white/5">
-              <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-4">
-                Provisionar Sede (Local)
-              </h3>
-
-              <form onSubmit={handleCreateSede} className="space-y-4">
-                <div> */}
-            <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
-              Nombre del Local
-            </label>
-            <input
-              type="text"
-              required
-              value={nombreSede}
-              onChange={(e) => setNombreSede(e.target.value)}
-              placeholder="Ej. Alico VIP Club"
-              className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
-            />
-          </div>
-
-
-
-          <button
-            type="submit"
-            className="w-full h-9 rounded-lg btn-gold text-xs font-bold transition-all"
-          >
-            Registrar Nueva Sede
-          </button>
-        </form>
-      </div>
-
-      {/* Formulario Asignar Admin Sede */}
+          <div className="lg:col-span-1 space-y-6">      {/* Formulario Asignar Admin Sede */}
       <div className="glass-card rounded-2xl p-5 border border-white/5">
         <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-4">
           Crear Cliente / Administrador
