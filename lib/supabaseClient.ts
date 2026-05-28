@@ -388,16 +388,81 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     if (prestamosRes.error) throw prestamosRes.error;
     if (cierresRes.error) throw cierresRes.error;
 
+    // Parsear y sanitizar tipos de datos numéricos y mapear campos de base de datos
+    const parsedInsumos = (insumosRes.data || []).map((i: any) => ({
+      ...i,
+      stock_actual: Number(i.stock_actual) || 0,
+      stock_minimo: Number(i.stock_minimo) || 0,
+      costo_unitario: Number(i.costo_unitario) || 0
+    }));
+
+    const parsedProductos = (productosRes.data || []).map((p: any) => ({
+      ...p,
+      precio_compra: Number(p.precio_compra) || 0,
+      precio_venta: Number(p.precio_venta) || 0,
+      stock_actual: Number(p.stock_actual) || 0,
+      stock_minimo: Number(p.stock_minimo) || 0
+    }));
+
+    const parsedMesas = (mesasRes.data || []).map((m: any) => ({
+      ...m,
+      consumos: (m.consumos || []).map((c: any) => ({
+        ...c,
+        cantidad: Number(c.cantidad) || 0,
+        precio_unitario: Number(c.precio_unitario) || 0
+      }))
+    }));
+
+    const parsedMovimientos = (movimientosRes.data || []).map((m: any) => ({
+      ...m,
+      cantidad: Number(m.cantidad) || 0
+    }));
+
+    const parsedVentas = (ventasRes.data || []).map((v: any) => ({
+      ...v,
+      total: Number(v.total) || 0,
+      items: (v.items || []).map((item: any) => ({
+        ...item,
+        cantidad: Number(item.cantidad) || 0,
+        precio_unitario: Number(item.precio_unitario) || 0
+      }))
+    }));
+
+    const parsedCreditos = (creditosRes.data || []).map((c: any) => ({
+      ...c,
+      total_deuda: Number(c.total_deuda) || 0,
+      total_pagado: Number(c.total_pagado) || 0
+    }));
+
+    const parsedPrestamos = (prestamosRes.data || []).map((p: any) => ({
+      ...p,
+      cantidad: Number(p.cantidad) || 0,
+      descontó_stock: p.desconto_stock ?? false
+    }));
+
+    const parsedCierres = (cierresRes.data || []).map((c: any) => ({
+      ...c,
+      monto_apertura: Number(c.monto_apertura) || 0,
+      ventas_efectivo: Number(c.ventas_efectivo) || 0,
+      ventas_tarjeta: Number(c.ventas_tarjeta) || 0,
+      ventas_transferencia: Number(c.ventas_transferencia) || 0,
+      ventas_credito: Number(c.ventas_credito) || 0,
+      ventas_total: Number(c.ventas_total) || 0,
+      monto_real: Number(c.monto_real) || 0,
+      descuadre: Number(c.descuadre) || 0,
+      ventas_count: Number(c.ventas_count) || 0
+    }));
+
     // Actualizar caché local instantáneamente
     setLocalStorage('alico_sedes', sedesRes.data || []);
-    setLocalStorage('alico_insumos', insumosRes.data || []);
-    setLocalStorage('alico_productos', productosRes.data || []);
-    setLocalStorage('alico_mesas', mesasRes.data || []);
-    setLocalStorage('alico_movimientos', movimientosRes.data || []);
-    setLocalStorage('alico_ventas', ventasRes.data || []);
-    setLocalStorage('alico_creditos', creditosRes.data || []);
-    setLocalStorage('alico_prestamos', prestamosRes.data || []);
-    setLocalStorage('alico_cierres', cierresRes.data || []);
+    setLocalStorage('alico_insumos', parsedInsumos);
+    setLocalStorage('alico_productos', parsedProductos);
+    setLocalStorage('alico_mesas', parsedMesas);
+    setLocalStorage('alico_movimientos', parsedMovimientos);
+    setLocalStorage('alico_ventas', parsedVentas);
+    setLocalStorage('alico_creditos', parsedCreditos);
+    setLocalStorage('alico_prestamos', parsedPrestamos);
+    setLocalStorage('alico_cierres', parsedCierres);
 
     console.log('🟢 [Alico Sync] Base de datos local sincronizada con la nube.');
     window.dispatchEvent(new Event('supabase_synced'));
@@ -1055,6 +1120,26 @@ export const mockDb = {
       return prestamo;
     }
     return null;
+  },
+  eliminarPrestamo: (prestamoId: string): boolean => {
+    const data = getMockData();
+    data.prestamos = data.prestamos.filter(p => p.id !== prestamoId);
+    saveMockData(data);
+    deleteFromSupabase('prestamos', prestamoId);
+    return true;
+  },
+  limpiarPrestamosDevueltos: (sedeId: string): boolean => {
+    const data = getMockData();
+    const devueltosSede = data.prestamos.filter(p => p.sede_id === sedeId && p.estado === 'DEVUELTO');
+    if (devueltosSede.length === 0) return false;
+    
+    data.prestamos = data.prestamos.filter(p => !(p.sede_id === sedeId && p.estado === 'DEVUELTO'));
+    saveMockData(data);
+    
+    devueltosSede.forEach(p => {
+      deleteFromSupabase('prestamos', p.id);
+    });
+    return true;
   },
   getCierres: (sedeId?: string): CierreCaja[] => {
     const cierres = getMockData().cierres;

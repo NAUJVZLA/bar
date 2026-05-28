@@ -11,6 +11,8 @@ export default function CarteraPage() {
   const [prestamos, setPrestamos] = useState<PrestamoBotella[]>([]);
   const [activeTab, setActiveTab] = useState<'cuentas' | 'prestamos'>('cuentas');
   const [busqueda, setBusqueda] = useState('');
+  const [filtroCuentas, setFiltroCuentas] = useState<'TODAS' | 'PENDIENTE' | 'PAGADO'>('TODAS');
+  const [filtroPrestamos, setFiltroPrestamos] = useState<'TODOS' | 'PENDIENTE' | 'DEVUELTO'>('TODOS');
 
   // Modals state
   const [showAddCreditModal, setShowAddCreditModal] = useState(false);
@@ -263,20 +265,63 @@ export default function CarteraPage() {
     }
   };
 
+  const handleLimpiarPrestamosDevueltos = () => {
+    const devueltos = prestamos.filter(p => p.estado === 'DEVUELTO');
+    if (devueltos.length === 0) {
+      alert('No hay préstamos con estado "DEVUELTO" en el historial de esta sede para limpiar.');
+      return;
+    }
+
+    if (!confirm('¿Deseas limpiar todos los envases marcados como DEVUELTOS del historial? Los préstamos pendientes se mantendrán intactos.')) {
+      return;
+    }
+
+    try {
+      mockDb.limpiarPrestamosDevueltos(activeSedeId);
+      setSuccessMsg('Historial de envases devueltos limpiado con éxito.');
+      loadSedeData();
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error al limpiar historial.');
+    }
+  };
+
+  const handleEliminarPrestamo = (prestamoId: string, cliente: string, estado: string) => {
+    const isPending = estado === 'PENDIENTE';
+    const msg = isPending 
+      ? `ATENCIÓN: El préstamo de ${cliente} está PENDIENTE. ¿Estás seguro de que deseas eliminarlo del historial sin registrar la devolución? Perderás el control de estas botellas.`
+      : `¿Deseas eliminar este registro de préstamo del historial?`;
+
+    if (!confirm(msg)) return;
+
+    try {
+      mockDb.eliminarPrestamo(prestamoId);
+      setSuccessMsg('Registro de préstamo eliminado del historial.');
+      loadSedeData();
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error al eliminar registro.');
+    }
+  };
+
   // ==========================================
   // METRICS & FILTERS CALCULATIONS
   // ==========================================
   
-  // Filtrado general por búsqueda
-  const creditosFiltrados = creditos.filter(c => 
-    c.cliente_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    (c.venta_id && c.venta_id.toLowerCase().includes(busqueda.toLowerCase()))
-  );
+  // Filtrado general por búsqueda y filtro de estado
+  const creditosFiltrados = creditos.filter(c => {
+    const matchesSearch = c.cliente_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+                          (c.venta_id && c.venta_id.toLowerCase().includes(busqueda.toLowerCase()));
+    const matchesStatus = filtroCuentas === 'TODAS' || c.estado === filtroCuentas;
+    return matchesSearch && matchesStatus;
+  });
 
-  const prestamosFiltrados = prestamos.filter(p => 
-    p.cliente_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    p.botella_nombre.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const prestamosFiltrados = prestamos.filter(p => {
+    const matchesSearch = p.cliente_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+                          p.botella_nombre.toLowerCase().includes(busqueda.toLowerCase());
+    const matchesStatus = filtroPrestamos === 'TODOS' || p.estado === filtroPrestamos;
+    return matchesSearch && matchesStatus;
+  });
 
   // Métricas Créditos
   const creditosPendientes = creditos.filter(c => c.estado === 'PENDIENTE');
@@ -302,7 +347,7 @@ export default function CarteraPage() {
         </div>
 
         {/* Buttons Action */}
-        <div>
+        <div className="flex gap-2 flex-wrap justify-end">
           {activeTab === 'cuentas' ? (
             <button
               onClick={openAddCredit}
@@ -314,21 +359,32 @@ export default function CarteraPage() {
               Registrar Crédito Manual
             </button>
           ) : (
-            <button
-              onClick={openAddLoan}
-              className="h-10 px-4 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/10"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4 text-black">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Registrar Préstamo Envase
-            </button>
+            <>
+              <button
+                onClick={handleLimpiarPrestamosDevueltos}
+                className="h-10 px-4 rounded-xl bg-red-950/20 border border-red-500/25 hover:bg-red-900/30 text-red-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4 text-red-400">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+                Limpiar Devueltos
+              </button>
+              <button
+                onClick={openAddLoan}
+                className="h-10 px-4 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/10"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4 text-black">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Registrar Préstamo Envase
+              </button>
+            </>
           )}
         </div>
       </div>
 
       {/* Tabs Selector & Buscador Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
         {/* Tabs switcher */}
         <div className="md:col-span-2 flex gap-2 bg-black/40 p-1 rounded-xl border border-white/5 max-w-sm">
           <button
@@ -357,6 +413,31 @@ export default function CarteraPage() {
           >
             Préstamo de Botellas
           </button>
+        </div>
+
+        {/* Selector de Estado */}
+        <div>
+          {activeTab === 'cuentas' ? (
+            <select
+              value={filtroCuentas}
+              onChange={(e: any) => setFiltroCuentas(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl bg-[#0a0a0c] border border-white/10 text-xs text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+              <option value="TODAS">Deudas: Todas</option>
+              <option value="PENDIENTE">Deudas: Pendientes</option>
+              <option value="PAGADO">Deudas: Pagadas</option>
+            </select>
+          ) : (
+            <select
+              value={filtroPrestamos}
+              onChange={(e: any) => setFiltroPrestamos(e.target.value)}
+              className="w-full h-10 px-3 rounded-xl bg-[#0a0a0c] border border-white/10 text-xs text-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-amber-500"
+            >
+              <option value="TODOS">Envases: Todos</option>
+              <option value="PENDIENTE">Envases: Pendientes</option>
+              <option value="DEVUELTO">Envases: Devueltos</option>
+            </select>
+          )}
         </div>
 
         {/* Buscador */}
@@ -418,7 +499,7 @@ export default function CarteraPage() {
               <span className="text-[10px] font-semibold text-zinc-500">{creditosFiltrados.length} registros</span>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[420px] overflow-y-auto scrollbar-thin">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-white/5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-black/10">
@@ -461,10 +542,10 @@ export default function CarteraPage() {
                             )}
                           </td>
                           <td className="py-3.5 px-6 text-xs text-zinc-300 text-right font-semibold">
-                            ${cred.total_deuda.toLocaleString('es-CO')}
+                            ${Number(cred.total_deuda).toLocaleString('es-CO')}
                           </td>
                           <td className="py-3.5 px-6 text-xs text-emerald-400 text-right font-semibold">
-                            ${cred.total_pagado.toLocaleString('es-CO')}
+                            ${Number(cred.total_pagado).toLocaleString('es-CO')}
                           </td>
                           <td className="py-3.5 px-6 text-xs text-amber-500 text-right font-black">
                             ${balance.toLocaleString('es-CO')}
@@ -556,7 +637,7 @@ export default function CarteraPage() {
               <span className="text-[10px] font-semibold text-zinc-500">{prestamosFiltrados.length} registros</span>
             </div>
 
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[420px] overflow-y-auto scrollbar-thin">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-white/5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 bg-black/10">
@@ -622,13 +703,22 @@ export default function CarteraPage() {
                           <td className="py-3.5 px-6 text-center">
                             <div className="flex items-center justify-center gap-2">
                               {!isReturned && (
-                                <button
-                                  onClick={() => openDevolver(pr)}
-                                  className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-black font-black text-[10px] rounded transition-all cursor-pointer shadow shadow-emerald-500/10"
-                                >
-                                  Devolver Envase
-                                </button>
+                                  <button
+                                    onClick={() => openDevolver(pr)}
+                                    className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-black font-black text-[10px] rounded transition-all cursor-pointer shadow shadow-emerald-500/10"
+                                  >
+                                    Devolver Envase
+                                  </button>
                               )}
+                              <button
+                                onClick={() => handleEliminarPrestamo(pr.id, pr.cliente_nombre, pr.estado)}
+                                title="Eliminar del historial"
+                                className="p-1 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-black hover:border-red-500 transition-all cursor-pointer"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                </svg>
+                              </button>
                               {pr.notas && (
                                 <span 
                                   title={pr.notas}

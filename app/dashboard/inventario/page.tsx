@@ -464,46 +464,121 @@ export default function InventarioPage() {
       {/* Contenido según la Tab */}
       {activeTab === 'categorias' ? (
         /* GESTIÓN DE CATEGORÍAS */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 glass-card rounded-2xl border border-white/5 p-6 space-y-4">
-            <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5">
-              Categorías Registradas
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in">
+          {/* Listado de Categorías */}
+          <div className="lg:col-span-2 glass-card rounded-2xl border border-white/5 overflow-hidden">
+            <div className="px-6 py-4 border-b border-white/5 flex items-center justify-between bg-black/20">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4 text-amber-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581a1.5 1.5 0 002.122 0l4.318-4.318a1.5 1.5 0 000-2.122L10.099 4.659A2.25 2.25 0 008.682 3h-.514z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 7.5h.007v.008H6V7.5z" />
+                </svg>
+                Gestión de Categorías
+              </h3>
+              <span className="text-[10px] font-bold bg-zinc-900 border border-white/10 text-zinc-400 py-1 px-3 rounded-xl">
+                {categorias.length} {categorias.length === 1 ? 'Categoría' : 'Categorías'}
+              </span>
+            </div>
+
+            <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-black/5">
               {categorias.map(cat => {
                 const count = productos.filter(p => p.categoria.toLowerCase() === cat.toLowerCase()).length;
                 const canDelete = count === 0;
 
                 return (
-                  <div key={cat} className="p-4 bg-black/40 border border-white/5 rounded-2xl flex items-center justify-between gap-3">
-                    <div>
-                      <h4 className="text-sm font-bold text-white truncate max-w-[120px]">{cat}</h4>
-                      <p className="text-[10px] text-zinc-500 font-semibold">{count} productos</p>
+                  <div key={cat} className="group p-4 bg-zinc-950/40 border border-white/5 rounded-2xl flex items-center justify-between gap-3 hover:border-amber-500/25 transition-all duration-300 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/0 via-amber-500/0 to-amber-500/[0.02] opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+                    <div className="flex items-center gap-3 truncate">
+                      <div className="h-9 w-9 rounded-xl bg-zinc-900 border border-white/10 flex items-center justify-center text-zinc-400 group-hover:text-amber-500 transition-colors flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581a1.5 1.5 0 002.122 0l4.318-4.318a1.5 1.5 0 000-2.122L10.099 4.659A2.25 2.25 0 008.682 3h-.514z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 7.5h.007v.008H6V7.5z" />
+                        </svg>
+                      </div>
+
+                      <div className="truncate">
+                        <h4 className="text-xs font-black text-white truncate max-w-[130px] tracking-wide">{cat}</h4>
+                        
+                        <div className="flex items-center gap-1.5 mt-1">
+                          {count > 0 ? (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8.5px] font-black uppercase tracking-wide bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                              En Uso ({count} {count === 1 ? 'Prod' : 'Prods'})
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[8.5px] font-black uppercase tracking-wide bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                              Vacía
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
+
                     <button
                       onClick={() => handleDeleteCategory(cat)}
                       disabled={!canDelete}
-                      className={`p-2 rounded-xl transition-all ${canDelete ? 'bg-red-500/10 text-red-400' : 'bg-zinc-950 text-zinc-600'}`}
+                      title={canDelete ? "Eliminar Categoría" : "No puedes eliminar una categoría en uso con productos activos"}
+                      className={`p-2 rounded-xl transition-all cursor-pointer border ${
+                        canDelete
+                          ? 'bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500 hover:text-black hover:border-red-500 shadow-sm hover:shadow-red-500/20'
+                          : 'bg-zinc-900/40 border-white/5 text-zinc-600 cursor-not-allowed opacity-35'
+                      }`}
                     >
-                      X
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                      </svg>
                     </button>
                   </div>
                 );
               })}
             </div>
           </div>
-          <div className="lg:col-span-1 glass-card rounded-2xl border border-white/5 p-6 h-fit">
-            <h3 className="text-xs font-black text-white uppercase tracking-widest pb-3 border-b border-white/5 mb-4">Nueva Categoría</h3>
+
+          {/* Formulario Nueva Categoría */}
+          <div className="lg:col-span-1 glass-card rounded-2xl border border-white/5 p-5 h-fit relative overflow-hidden bg-black/10">
+            <div className="flex items-center gap-2 pb-3 border-b border-white/5 mb-4">
+              <div className="h-7 w-7 rounded-lg bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </div>
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider">Nueva Categoría</h3>
+            </div>
+
+            {catErrorMsg && (
+              <div className="p-2.5 rounded-lg bg-red-950/20 border border-red-500/20 text-red-300 text-[10px] font-bold mb-3 animate-fade-in">
+                {catErrorMsg}
+              </div>
+            )}
+            {catSuccessMsg && (
+              <div className="p-2.5 rounded-lg bg-emerald-950/20 border border-emerald-500/20 text-emerald-300 text-[10px] font-bold mb-3 animate-fade-in">
+                {catSuccessMsg}
+              </div>
+            )}
+
             <form onSubmit={handleCreateCategory} className="space-y-4">
-              <input
-                type="text"
-                required
-                value={nuevaCatNombre}
-                onChange={(e) => setNuevaCatNombre(e.target.value)}
-                placeholder="Ej. Bebidas Calientes"
-                className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
-              />
-              <button type="submit" className="w-full h-9 rounded-lg btn-gold text-xs font-bold">Registrar</button>
+              <div>
+                <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 px-0.5">
+                  Nombre de la Categoría
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={nuevaCatNombre}
+                  onChange={(e) => setNuevaCatNombre(e.target.value)}
+                  placeholder="Ej. Bebidas Calientes"
+                  className="w-full h-10 px-3 rounded-xl glass-input text-xs text-white focus:ring-1 focus:ring-amber-500"
+                />
+              </div>
+              <button 
+                type="submit" 
+                className="w-full h-10 rounded-xl btn-gold text-xs font-bold shadow-md shadow-amber-500/10 transition-all flex items-center justify-center gap-1.5"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4 text-black">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Registrar Categoría
+              </button>
             </form>
           </div>
         </div>
