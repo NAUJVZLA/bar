@@ -636,10 +636,6 @@ export const mockDb = {
     const mesas = getMockData().mesas;
     return sedeId ? mesas.filter(m => m.sede_id === sedeId) : mesas;
   },
-  updateMesaEstado: (mesaId: string, estado: 'DISPONIBLE' | 'OCUPADA' | 'PAGANDO', clienteNombre = ''): Mesa | null => {
-    const data = getMockData();
-    const idx = data.mesas.findIndex(m => m.id === mesaId);
-    if (idx !== -1) {
   updateMesaEstado: (mesaId: string, estado: 'DISPONIBLE' | 'OCUPADA' | 'PAGANDO', nuevaMesa?: Partial<Mesa>): Mesa | null => {
     const data = getMockData();
     const idx = data.mesas.findIndex(m => m.id === mesaId);
