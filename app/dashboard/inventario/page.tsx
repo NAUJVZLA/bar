@@ -69,8 +69,10 @@ export default function InventarioPage() {
       closeModal();
       closeInsumoModal();
     };
+    const handleCloudSync = () => { loadSedeData(); };
     window.addEventListener('sedeChanged', handleSedeChange);
-    return () => window.removeEventListener('sedeChanged', handleSedeChange);
+    window.addEventListener('cloudSync', handleCloudSync);
+    return () => { window.removeEventListener('sedeChanged', handleSedeChange); window.removeEventListener('cloudSync', handleCloudSync); };
   }, []);
 
   const closeModal = () => {
@@ -303,9 +305,12 @@ export default function InventarioPage() {
   // Agregar ingrediente a la receta actual
   const handleAddRecetaItem = () => {
     if (insumos.length === 0) return;
-    const first = insumos[0];
-    if (receta.find(r => r.insumo_id === first.id)) return;
-    setReceta([...receta, { insumo_id: first.id, insumo_nombre: first.nombre, cantidad: 1, unidad: first.unidad }]);
+    const available = insumos.find(i => !receta.find(r => r.insumo_id === i.id));
+    if (!available) {
+      alert('Ya has añadido todos los insumos disponibles a esta receta.');
+      return;
+    }
+    setReceta([...receta, { insumo_id: available.id, insumo_nombre: available.nombre, cantidad: 1, unidad: available.unidad }]);
   };
 
   // Categorías únicas
@@ -521,12 +526,21 @@ export default function InventarioPage() {
                 {insumosFiltrados.length === 0 ? (
                   <tr><td colSpan={6} className="py-8 text-center text-zinc-500">No hay insumos registrados.</td></tr>
                 ) : (
-                  insumosFiltrados.map(i => (
+                  insumosFiltrados.map(i => {
+                    const isLowInsumo = i.stock_actual <= i.stock_minimo;
+                    const isOutInsumo = i.stock_actual <= 0;
+                    return (
                     <tr key={i.id} className="hover:bg-white/2">
                       <td className="py-3 px-4 text-white font-semibold">{i.nombre}</td>
                       <td className="py-3 px-4"><span className="bg-emerald-900 border border-emerald-500/20 text-emerald-300 text-[9px] font-bold py-0.5 px-2 rounded-md">{i.unidad}</span></td>
                       <td className="py-3 px-4 text-right font-medium">${i.costo_unitario.toLocaleString('es-CO')}</td>
-                      <td className="py-3 px-4 text-center font-bold text-emerald-400">{i.stock_actual}</td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`font-black text-xs py-0.5 px-2.5 rounded-md ${
+                          isOutInsumo ? 'bg-red-500 text-black font-extrabold' : isLowInsumo ? 'bg-red-500/10 text-red-400 border border-red-500/25 animate-pulse' : 'text-emerald-400'
+                        }`}>
+                          {i.stock_actual}
+                        </span>
+                      </td>
                       <td className="py-3 px-4 text-center text-zinc-500">{i.stock_minimo}</td>
                       <td className="py-3 px-4 text-center">
                         <button onClick={() => handleEditInsumoClick(i)} className="p-1.5 rounded-lg bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-zinc-300 hover:text-white cursor-pointer mx-1">
@@ -537,7 +551,7 @@ export default function InventarioPage() {
                         </button>
                       </td>
                     </tr>
-                  ))
+                  )})
                 )}
               </tbody>
             </table>

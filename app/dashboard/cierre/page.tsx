@@ -64,8 +64,10 @@ export default function CierreCajaPage() {
     const handleSedeChange = () => {
       loadCierreData();
     };
+    const handleCloudSync = () => { loadSedeData(); };
     window.addEventListener('sedeChanged', handleSedeChange);
-    return () => window.removeEventListener('sedeChanged', handleSedeChange);
+    window.addEventListener('cloudSync', handleCloudSync);
+    return () => { window.removeEventListener('sedeChanged', handleSedeChange); window.removeEventListener('cloudSync', handleCloudSync); };
   }, []);
 
   // Cálculos contables del turno activo

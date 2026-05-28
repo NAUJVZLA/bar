@@ -397,8 +397,8 @@ export const syncFromSupabase = async (): Promise<boolean> => {
 
     console.log('🟢 [Alico Sync] Base de datos local sincronizada con la nube.');
     window.dispatchEvent(new Event('supabase_synced'));
-    // Despachamos sedeChanged para que las UI recarguen los datos frescos
-    window.dispatchEvent(new Event('sedeChanged'));
+    // Despachamos cloudSync para que las UI recarguen los datos frescos sin cerrar los modales
+    window.dispatchEvent(new Event('cloudSync'));
     return true;
   } catch (err) {
     console.error('❌ [Alico Sync] Error de red al sincronizar desde Supabase. Usando caché local offline:', err);
@@ -658,7 +658,7 @@ export const mockDb = {
         if (insumoIdx !== -1) {
           const cantidadARestar = itemReceta.cantidad * cantidad;
           if (data.insumos[insumoIdx].stock_actual < cantidadARestar) {
-             console.warn(`Alerta: Stock de insumo ${data.insumos[insumoIdx].nombre} puede quedar negativo.`);
+             throw new Error(`Insumo insuficiente: Solo te quedan ${data.insumos[insumoIdx].stock_actual} ${data.insumos[insumoIdx].unidad} de ${data.insumos[insumoIdx].nombre}. No puedes preparar este producto.`);
           }
           data.insumos[insumoIdx].stock_actual -= cantidadARestar;
         }

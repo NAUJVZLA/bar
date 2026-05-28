@@ -44,8 +44,10 @@ export default function VentasPage() {
       loadSedeData();
       setCart([]); // Limpiar carrito al cambiar de sede para evitar mezclar productos
     };
+    const handleCloudSync = () => { loadSedeData(); };
     window.addEventListener('sedeChanged', handleSedeChange);
-    return () => window.removeEventListener('sedeChanged', handleSedeChange);
+    window.addEventListener('cloudSync', handleCloudSync);
+    return () => { window.removeEventListener('sedeChanged', handleSedeChange); window.removeEventListener('cloudSync', handleCloudSync); };
   }, []);
 
   // Categorías únicas

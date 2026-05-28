@@ -35,8 +35,10 @@ export default function DashboardPage() {
     const handleSedeChange = () => {
       loadSedeData();
     };
+    const handleCloudSync = () => { loadSedeData(); };
     window.addEventListener('sedeChanged', handleSedeChange);
-    return () => window.removeEventListener('sedeChanged', handleSedeChange);
+    window.addEventListener('cloudSync', handleCloudSync);
+    return () => { window.removeEventListener('sedeChanged', handleSedeChange); window.removeEventListener('cloudSync', handleCloudSync); };
   }, []);
 
   // Cálculos estadísticos rápidos

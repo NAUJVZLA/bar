@@ -64,8 +64,10 @@ export default function CarteraPage() {
       loadSedeData();
       closeAllModals();
     };
+    const handleCloudSync = () => { loadSedeData(); };
     window.addEventListener('sedeChanged', handleSedeChange);
-    return () => window.removeEventListener('sedeChanged', handleSedeChange);
+    window.addEventListener('cloudSync', handleCloudSync);
+    return () => { window.removeEventListener('sedeChanged', handleSedeChange); window.removeEventListener('cloudSync', handleCloudSync); };
   }, []);
 
   const closeAllModals = () => {
