@@ -352,8 +352,14 @@ export const deleteFromSupabase = async (table: string, id: string) => {
   }
 };
 
+let activeSyncsCount = 0;
+
 export const syncFromSupabase = async (): Promise<boolean> => {
   if (isMockMode || !supabase) return false;
+  if (activeSyncsCount > 0) {
+    console.log('⏳ [Alico Sync] Sincronización entrante omitida porque hay subidas locales en progreso.');
+    return false;
+  }
   try {
     console.log('🔄 [Alico Sync] Descargando base de datos desde Supabase...');
     const [
@@ -524,6 +530,7 @@ export const getMockData = (): MockDataStore => {
 };
 
 export const saveMockData = (newData: Partial<MockDataStore>): void => {
+  activeSyncsCount++;
   let syncQueue = Promise.resolve();
 
   if (newData.sedes) {
@@ -562,6 +569,12 @@ export const saveMockData = (newData: Partial<MockDataStore>): void => {
     setLocalStorage('alico_cierres', newData.cierres);
     syncQueue = syncQueue.then(() => syncTableToSupabase('cierres')) as Promise<void>;
   }
+
+  syncQueue.finally(() => {
+    setTimeout(() => {
+      activeSyncsCount = Math.max(0, activeSyncsCount - 1);
+    }, 800);
+  });
 };
 
 // ==========================================
@@ -1134,11 +1147,28 @@ export const mockDb = {
     if (devueltosSede.length === 0) return false;
     
     data.prestamos = data.prestamos.filter(p => !(p.sede_id === sedeId && p.estado === 'DEVUELTO'));
+    
+    activeSyncsCount++;
     saveMockData({ prestamos: data.prestamos });
     
-    devueltosSede.forEach(p => {
-      deleteFromSupabase('prestamos', p.id);
-    });
+    if (!isMockMode && supabase) {
+      (async () => {
+        try {
+          const { error } = await supabase.from('prestamos').delete().eq('sede_id', sedeId).eq('estado', 'DEVUELTO');
+          if (error) console.error('Error al limpiar préstamos en Supabase:', error);
+        } catch (err) {
+          console.error('Fallo al limpiar préstamos:', err);
+        } finally {
+          setTimeout(() => {
+            activeSyncsCount = Math.max(0, activeSyncsCount - 1);
+          }, 800);
+        }
+      })();
+    } else {
+      setTimeout(() => {
+        activeSyncsCount = Math.max(0, activeSyncsCount - 1);
+      }, 800);
+    }
     return true;
   },
   limpiarCreditosPagados: (sedeId: string): boolean => {
@@ -1147,11 +1177,28 @@ export const mockDb = {
     if (pagadosSede.length === 0) return false;
     
     data.creditos = data.creditos.filter(c => !(c.sede_id === sedeId && c.estado === 'PAGADO'));
+    
+    activeSyncsCount++;
     saveMockData({ creditos: data.creditos });
     
-    pagadosSede.forEach(c => {
-      deleteFromSupabase('creditos', c.id);
-    });
+    if (!isMockMode && supabase) {
+      (async () => {
+        try {
+          const { error } = await supabase.from('creditos').delete().eq('sede_id', sedeId).eq('estado', 'PAGADO');
+          if (error) console.error('Error al limpiar créditos en Supabase:', error);
+        } catch (err) {
+          console.error('Fallo al limpiar créditos:', err);
+        } finally {
+          setTimeout(() => {
+            activeSyncsCount = Math.max(0, activeSyncsCount - 1);
+          }, 800);
+        }
+      })();
+    } else {
+      setTimeout(() => {
+        activeSyncsCount = Math.max(0, activeSyncsCount - 1);
+      }, 800);
+    }
     return true;
   },
   getCierres: (sedeId?: string): CierreCaja[] => {
