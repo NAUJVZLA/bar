@@ -307,20 +307,28 @@ export const syncTableToSupabase = async (table: keyof MockDataStore) => {
   try {
     let data = getMockData()[table];
     if (data.length > 0) {
-      // Sanitización para evitar que Supabase rechace el upsert por columnas inexistentes
+      // Sanitización para evitar que Supabase rechace el upsert por columnas inexistentes o inconsistentes (creado_en)
       let payload = data;
       if (table === 'productos') {
-        payload = (data as Producto[]).map(({ registrado_por, ...rest }) => rest) as any;
+        payload = (data as Producto[]).map(({ registrado_por, ...rest }: any) => {
+          const { creado_en, ...finalRest } = rest;
+          return finalRest;
+        }) as any;
       } else if (table === 'prestamos') {
-        payload = (data as PrestamoBotella[]).map(p => {
-          const { descontó_stock, ...rest } = p;
-          return { ...rest, desconto_stock: descontó_stock } as any;
-        });
+        payload = (data as PrestamoBotella[]).map((p: any) => {
+          const { descontó_stock, creado_en, ...rest } = p;
+          return { ...rest, desconto_stock: descontó_stock };
+        }) as any;
+      } else {
+        payload = (data as any[]).map((p: any) => {
+          const { creado_en, ...rest } = p;
+          return rest;
+        }) as any;
       }
 
       const { error } = await supabase.from(table).upsert(payload as any);
       if (error) {
-        console.error(`[Alico Sync] Error subiendo tabla ${table} a Supabase:`, error);
+        console.error(`[Alico Sync] Error subiendo tabla ${table} a Supabase:`, JSON.stringify(error, null, 2), "Original:", error);
       }
     }
   } catch (err) {
@@ -447,41 +455,43 @@ export const getMockData = (): MockDataStore => {
 };
 
 export const saveMockData = (newData: Partial<MockDataStore>): void => {
+  let syncQueue = Promise.resolve();
+
   if (newData.sedes) {
     setLocalStorage('alico_sedes', newData.sedes);
-    syncTableToSupabase('sedes');
+    syncQueue = syncQueue.then(() => syncTableToSupabase('sedes')) as Promise<void>;
   }
   if (newData.insumos) {
     setLocalStorage('alico_insumos', newData.insumos);
-    syncTableToSupabase('insumos');
+    syncQueue = syncQueue.then(() => syncTableToSupabase('insumos')) as Promise<void>;
   }
   if (newData.productos) {
     setLocalStorage('alico_productos', newData.productos);
-    syncTableToSupabase('productos');
+    syncQueue = syncQueue.then(() => syncTableToSupabase('productos')) as Promise<void>;
   }
   if (newData.mesas) {
     setLocalStorage('alico_mesas', newData.mesas);
-    syncTableToSupabase('mesas');
+    syncQueue = syncQueue.then(() => syncTableToSupabase('mesas')) as Promise<void>;
   }
   if (newData.movimientos) {
     setLocalStorage('alico_movimientos', newData.movimientos);
-    syncTableToSupabase('movimientos');
+    syncQueue = syncQueue.then(() => syncTableToSupabase('movimientos')) as Promise<void>;
   }
   if (newData.ventas) {
     setLocalStorage('alico_ventas', newData.ventas);
-    syncTableToSupabase('ventas');
+    syncQueue = syncQueue.then(() => syncTableToSupabase('ventas')) as Promise<void>;
   }
   if (newData.creditos) {
     setLocalStorage('alico_creditos', newData.creditos);
-    syncTableToSupabase('creditos');
+    syncQueue = syncQueue.then(() => syncTableToSupabase('creditos')) as Promise<void>;
   }
   if (newData.prestamos) {
     setLocalStorage('alico_prestamos', newData.prestamos);
-    syncTableToSupabase('prestamos');
+    syncQueue = syncQueue.then(() => syncTableToSupabase('prestamos')) as Promise<void>;
   }
   if (newData.cierres) {
     setLocalStorage('alico_cierres', newData.cierres);
-    syncTableToSupabase('cierres');
+    syncQueue = syncQueue.then(() => syncTableToSupabase('cierres')) as Promise<void>;
   }
 };
 
