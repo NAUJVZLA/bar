@@ -94,14 +94,30 @@ export default function MesasPage() {
       return;
     }
 
-    mockDb.updateMesaEstado(selectedMesa.id, 'OCUPADA', clienteNombreInput);
-    setSuccessMsg(`¡Mesa ${selectedMesa.numero_mesa} abierta con éxito!`);
+    mockDb.updateMesaEstado(selectedMesa.id, 'OCUPADA', { cliente_nombre: clienteNombreInput });
+    setSuccessMsg(`¡Mesa ${selectedMesa.numero_mesa} abierta con éxito! Redirigiendo a comandas...`);
     
     // Guardar atendido por en local para recordar responsable
     localStorage.setItem('alico_last_waiter', atendidoPorInput);
     
     loadSedeData();
-    setTimeout(() => closeAllModals(), 600);
+    const updatedMesa = mockDb.getMesas(activeSedeId).find(m => m.id === selectedMesa.id);
+    
+    setTimeout(() => {
+      // Cerramos modal de apertura y abrimos comanda directamente
+      setShowOpenModal(false);
+      setErrorMsg('');
+      setSuccessMsg('');
+      
+      if (updatedMesa) {
+        setSelectedMesa(updatedMesa);
+        setAtendidoPorConsumo(atendidoPorInput);
+        setEntregadoPorConsumo(atendidoPorInput);
+        setShowAddConsumoModal(true);
+      } else {
+        closeAllModals();
+      }
+    }, 600);
   };
 
   // 2. VER DETALLES MESA (OCUPADA o PAGANDO)
@@ -193,6 +209,31 @@ export default function MesasPage() {
     } else {
       closeAllModals();
     }
+  };
+
+  // 4.1 CANCELAR TODOS LOS CONSUMOS Y LIBERAR MESA (DISPONIBLE)
+  const handleReleaseMesa = (mesaToRelease?: Mesa) => {
+    const targetMesa = mesaToRelease || selectedMesa;
+    if (!targetMesa) return;
+
+    const hasConsumos = targetMesa.consumos && targetMesa.consumos.length > 0;
+    const confirmMsg = hasConsumos
+      ? `¿Estás seguro de que deseas liberar la ${targetMesa.numero_mesa}? Se cancelarán todos los consumos cargados (${targetMesa.consumos.length} items) y el stock retornará a bodega.`
+      : `¿Estás seguro de que deseas liberar la ${targetMesa.numero_mesa} y dejarla disponible?`;
+
+    if (!confirm(confirmMsg)) return;
+
+    const waiter = localStorage.getItem('alico_last_waiter') || 'Administrador';
+    mockDb.liberarMesaTotalmente(targetMesa.id, waiter);
+
+    setSuccessMsg(`Mesa ${targetMesa.numero_mesa} liberada y disponible.`);
+    loadSedeData();
+
+    setTimeout(() => {
+      closeAllModals();
+      // Emitir cambio de sede global para actualizar dashboard
+      window.dispatchEvent(new Event('sedeChanged'));
+    }, 800);
   };
 
   // 5. SOLICITAR CUENTA (OCUPADA -> PAGANDO)
@@ -306,11 +347,10 @@ export default function MesasPage() {
             const isFree = mesa.estado === 'DISPONIBLE';
 
             return (
-              <button
+              <div
                 key={mesa.id}
-                type="button"
                 onClick={() => isFree ? handleOpenMesaClick(mesa) : handleDetailMesaClick(mesa)}
-                className={`glass-card rounded-2xl p-5 border text-left flex flex-col justify-between h-40 transition-all ${
+                className={`group glass-card rounded-2xl p-5 border text-left flex flex-col justify-between h-40 transition-all cursor-pointer relative overflow-hidden ${
                   isFree
                     ? 'border-emerald-500/10 hover:border-emerald-500/35 hover:bg-emerald-950/5'
                     : isPaying
@@ -329,9 +369,42 @@ export default function MesasPage() {
                     }`}>
                       {mesa.numero_mesa}
                     </span>
-                    <span className="h-2 w-2 rounded-full animate-ping bg-current" style={{
-                      color: isFree ? '#10b981' : isPaying ? '#eab308' : '#ef4444'
-                    }}></span>
+                    
+                    {/* Acciones rápidas discretas en hover */}
+                    {!isFree ? (
+                      <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedMesa(mesa);
+                            const cachedWaiter = localStorage.getItem('alico_last_waiter') || '';
+                            setAtendidoPorConsumo(cachedWaiter);
+                            setEntregadoPorConsumo(cachedWaiter);
+                            setShowAddConsumoModal(true);
+                          }}
+                          className="p-1 rounded bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-zinc-300 hover:text-white"
+                          title="Cargar Ronda Rápida"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                            <path d="M10.75 4.75a.75.75 0 00-1.5 0v4.5h-4.5a.75.75 0 000 1.5h4.5v4.5a.75.75 0 001.5 0v-4.5h4.5a.75.75 0 000-1.5h-4.5v-4.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleReleaseMesa(mesa)}
+                          className="p-1 rounded bg-red-950/40 border border-red-500/20 hover:bg-red-900/40 text-red-400 hover:text-red-300"
+                          title="Liberar/Vaciar Mesa"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                            <path fillRule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75V4H3a.75.75 0 000 1.5h1v10A2.25 2.25 0 006.25 17.75h7.5A2.25 2.25 0 0016 15.5v-10h1a.75.75 0 000-1.5h-3v-.25A2.75 2.75 0 0011.25 1h-2.5zM8 4h4v-.25a1.25 1.25 0 00-1.25-1.25h-2.5A1.25 1.25 0 008 3.75V4zM5.5 5.5h9v10a.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75v-10z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[9px] text-emerald-400 font-extrabold uppercase tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+                        + ABRIR
+                      </span>
+                    )}
                   </div>
 
                   <p className="text-[11px] font-extrabold text-white mt-3 truncate max-w-[120px]">
@@ -348,7 +421,7 @@ export default function MesasPage() {
                     ${subtotalMesa.toLocaleString('es-CO')}
                   </p>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -526,36 +599,46 @@ export default function MesasPage() {
             )}
 
             {/* Acciones principales de mesa */}
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="space-y-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <button
+                  type="button"
+                  onClick={handleAddConsumoClick}
+                  className="flex-1 h-9 rounded-lg bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                >
+                  + Cargar Bebidas / Rondas
+                </button>
+
+                {selectedMesa.consumos.length > 0 && (
+                  <>
+                    {selectedMesa.estado === 'OCUPADA' ? (
+                      <button
+                        type="button"
+                        onClick={handleRequestBill}
+                        className="flex-1 h-9 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                      >
+                        Pide Cuenta (Amarillo)
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleCheckoutClick}
+                        className="flex-1 h-9 rounded-lg btn-gold text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                      >
+                        Cerrar y Cobrar Mesa
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+
               <button
                 type="button"
-                onClick={handleAddConsumoClick}
-                className="flex-1 h-9 rounded-lg bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
+                onClick={() => handleReleaseMesa()}
+                className="w-full h-9 rounded-lg bg-red-950/20 border border-red-500/20 hover:bg-red-900/30 text-red-400 text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
               >
-                + Cargar Bebidas / Rondas
+                ❌ Cancelar y Liberar Mesa (Por error)
               </button>
-
-              {selectedMesa.consumos.length > 0 && (
-                <>
-                  {selectedMesa.estado === 'OCUPADA' ? (
-                    <button
-                      type="button"
-                      onClick={handleRequestBill}
-                      className="flex-1 h-9 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-black text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
-                    >
-                      Pide Cuenta (Amarillo)
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleCheckoutClick}
-                      className="flex-1 h-9 rounded-lg btn-gold text-xs font-bold flex items-center justify-center gap-1.5 transition-all"
-                    >
-                      Cerrar y Cobrar Mesa
-                    </button>
-                  )}
-                </>
-              )}
             </div>
 
           </div>

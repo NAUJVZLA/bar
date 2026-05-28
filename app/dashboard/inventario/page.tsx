@@ -256,8 +256,8 @@ export default function InventarioPage() {
         categoria: categoria,
         precio_compra: tieneReceta ? 0 : precioCompra,
         precio_venta: precioVenta,
-        stock_actual: tieneReceta ? 999 : stockActual, // Comidas no tienen stock fijo
-        stock_minimo: tieneReceta ? 0 : stockMinimo,
+        stock_actual: stockActual,
+        stock_minimo: stockMinimo,
         registrado_por: registradoPor,
         tiene_receta: tieneReceta,
         receta: tieneReceta ? receta : []
@@ -594,15 +594,11 @@ export default function InventarioPage() {
                         </td>
                         <td className="py-3 px-4 text-right font-bold text-amber-500">${p.precio_venta.toLocaleString('es-CO')}</td>
                         <td className="py-3 px-4 text-center">
-                          {p.tiene_receta ? (
-                            <span className="text-emerald-400 text-[10px] font-bold">Por Receta (Insumos)</span>
-                          ) : (
-                            <span className={`font-black text-xs py-0.5 px-2.5 rounded-md ${
-                              isOutOfStock ? 'bg-red-500 text-black font-extrabold' : isLowStock ? 'bg-red-500/10 text-red-400 border border-red-500/25 animate-pulse' : 'text-emerald-400'
-                            }`}>
-                              {p.stock_actual} U.
-                            </span>
-                          )}
+                          <span className={`font-black text-xs py-0.5 px-2.5 rounded-md ${
+                            isOutOfStock ? 'bg-red-500 text-black font-extrabold' : isLowStock ? 'bg-red-500/10 text-red-400 border border-red-500/25 animate-pulse' : 'text-emerald-400'
+                          }`}>
+                            {p.stock_actual} U.
+                          </span>
                         </td>
                         <td className="py-3 px-4 text-center">
                           <button onClick={() => handleEditProductClick(p)} className="p-1.5 rounded-lg bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-zinc-300 hover:text-white cursor-pointer mx-1">
@@ -693,7 +689,7 @@ export default function InventarioPage() {
                 </label>
               </div>
 
-              {tieneReceta ? (
+              {tieneReceta && (
                 /* Constructor de Recetas */
                 <div className="p-4 bg-black/40 border border-white/5 rounded-xl space-y-3">
                   <div className="flex items-center justify-between">
@@ -740,31 +736,40 @@ export default function InventarioPage() {
                     </div>
                   )}
                 </div>
-              ) : (
-                /* Stock Normal */
-                <div className="grid grid-cols-2 gap-3">
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                {!tieneReceta ? (
                   <div>
                     <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Precio Compra</label>
                     <input type="number" min="0" value={precioCompra} onChange={e=>setPrecioCompra(Number(e.target.value))} className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white" />
                   </div>
+                ) : (
                   <div>
-                    <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Stock Actual</label>
-                    <input type="number" min="0" value={stockActual} onChange={e=>setStockActual(Number(e.target.value))} className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white" />
+                    <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Costo Estimado (Suma Insumos)</label>
+                    <div className="w-full h-9 px-3 py-2 rounded-lg bg-zinc-950/80 border border-white/5 text-xs text-zinc-400 font-semibold font-mono flex items-center">
+                      ${receta.reduce((sum, item) => {
+                        const ins = insumos.find(i => i.id === item.insumo_id);
+                        return sum + (ins ? ins.costo_unitario * item.cantidad : 0);
+                      }, 0).toLocaleString('es-CO')}
+                    </div>
                   </div>
+                )}
+                <div>
+                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Stock Disponible</label>
+                  <input type="number" min="0" value={stockActual} onChange={e=>setStockActual(Number(e.target.value))} className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white" />
                 </div>
-              )}
+              </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Precio Venta al Público</label>
                   <input type="number" min="0" required value={precioVenta} onChange={e=>setPrecioVenta(Number(e.target.value))} className="w-full h-9 px-3 rounded-lg glass-input text-xs font-bold text-amber-400" />
                 </div>
-                {!tieneReceta && (
-                  <div>
-                    <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Stock Mínimo</label>
-                    <input type="number" min="1" required value={stockMinimo} onChange={e=>setStockMinimo(Number(e.target.value))} className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white" />
-                  </div>
-                )}
+                <div>
+                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1">Stock Mínimo</label>
+                  <input type="number" min="0" required value={stockMinimo} onChange={e=>setStockMinimo(Number(e.target.value))} className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white" />
+                </div>
               </div>
 
               <div>

@@ -64,7 +64,7 @@ export default function CierreCajaPage() {
     const handleSedeChange = () => {
       loadCierreData();
     };
-    const handleCloudSync = () => { loadSedeData(); };
+    const handleCloudSync = () => { loadCierreData(); };
     window.addEventListener('sedeChanged', handleSedeChange);
     window.addEventListener('cloudSync', handleCloudSync);
     return () => { window.removeEventListener('sedeChanged', handleSedeChange); window.removeEventListener('cloudSync', handleCloudSync); };

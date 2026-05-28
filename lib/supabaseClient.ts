@@ -60,6 +60,7 @@ export interface ConsumoItem {
   producto_id: string;
   nombre: string;
   cantidad: number;
+  precio_unitario: number;
   registrado_por: string;
   cliente_nombre?: string;
   entregado_por?: string;
@@ -188,7 +189,7 @@ const INITIAL_PRODUCTS: Producto[] = [
   // Comidas Rápidas (Productos con Receta)
   { 
     id: 'p12', sede_id: 'sede-norte', codigo_barras: 'COM-001', nombre: 'Hamburguesa Sencilla', categoria: 'Comidas', 
-    precio_compra: 0, precio_venta: 15000, stock_actual: 999, stock_minimo: 0,
+    precio_compra: 0, precio_venta: 15000, stock_actual: 15, stock_minimo: 5,
     tiene_receta: true,
     receta: [
       { insumo_id: 'i1', insumo_nombre: 'Carne de res molida', cantidad: 120, unidad: 'g' },
@@ -198,7 +199,7 @@ const INITIAL_PRODUCTS: Producto[] = [
   },
   { 
     id: 'p13', sede_id: 'sede-norte', codigo_barras: 'COM-002', nombre: 'Perro Caliente Tradicional', categoria: 'Comidas', 
-    precio_compra: 0, precio_venta: 12000, stock_actual: 999, stock_minimo: 0,
+    precio_compra: 0, precio_venta: 12000, stock_actual: 20, stock_minimo: 5,
     tiene_receta: true,
     receta: [
       { insumo_id: 'i3', insumo_nombre: 'Pan de perro caliente', cantidad: 1, unidad: 'und' },
@@ -568,8 +569,8 @@ export const mockDb = {
       if (idx !== -1) {
         const oldStock = data.productos[idx].stock_actual;
         const diff = prod.stock_actual - oldStock;
-        // Solo registrar movimiento de inventario si no es una comida preparada con receta (es decir, stock físico real)
-        if (diff !== 0 && !prod.tiene_receta) {
+        // Registrar movimiento de inventario si cambia el stock físico disponible
+        if (diff !== 0) {
           const type = diff > 0 ? 'INGRESO' : 'EGRESO';
           data.movimientos.unshift({
             id: 'mov-' + Date.now(),
@@ -605,19 +606,17 @@ export const mockDb = {
       };
       data.productos.push(newProd);
       
-      if (!newProd.tiene_receta) {
-        data.movimientos.unshift({
-          id: 'mov-' + Date.now(),
-          producto_id: newId,
-          producto_nombre: newProd.nombre,
-          sede_id: newProd.sede_id,
-          tipo: 'INGRESO',
-          cantidad: newProd.stock_actual,
-          motivo: 'Registro inicial de producto',
-          registrado_por: prod.registrado_por || 'Sistema',
-          fecha_hora: new Date().toISOString()
-        });
-      }
+      data.movimientos.unshift({
+        id: 'mov-' + Date.now(),
+        producto_id: newId,
+        producto_nombre: newProd.nombre,
+        sede_id: newProd.sede_id,
+        tipo: 'INGRESO',
+        cantidad: newProd.stock_actual,
+        motivo: 'Registro inicial de producto',
+        registrado_por: prod.registrado_por || 'Sistema',
+        fecha_hora: new Date().toISOString()
+      });
       result = newProd;
     }
     saveMockData(data);
@@ -649,6 +648,50 @@ export const mockDb = {
         mesa.numero_mesa = nuevaMesa.numero_mesa || mesa.numero_mesa;
         mesa.cliente_nombre = nuevaMesa.cliente_nombre || mesa.cliente_nombre;
       }
+      saveMockData(data);
+      return mesa;
+    }
+    return null;
+  },
+
+  liberarMesaTotalmente: (mesaId: string, atendidoPor: string): Mesa | null => {
+    const data = getMockData();
+    const idx = data.mesas.findIndex(m => m.id === mesaId);
+    if (idx !== -1) {
+      const mesa = data.mesas[idx];
+      
+      // Reintegrar stock y registrar movimientos para cada consumo activo
+      mesa.consumos.forEach(cons => {
+        const prodIdx = data.productos.findIndex(p => p.id === cons.producto_id);
+        if (prodIdx !== -1) {
+          const prodActual = data.productos[prodIdx];
+          
+          if (prodActual.tiene_receta) {
+             // Es Comida: reintegramos insumos
+             mockDb._reintegrarInsumosReceta(data, prodActual, cons.cantidad);
+          }
+          
+          // Reintegramos stock normal del producto y registramos movimiento
+          prodActual.stock_actual += cons.cantidad;
+          data.movimientos.unshift({
+            id: 'mov-lib-' + Date.now() + '-' + cons.id,
+            producto_id: cons.producto_id,
+            producto_nombre: cons.nombre,
+            sede_id: mesa.sede_id,
+            tipo: 'INGRESO',
+            cantidad: cons.cantidad,
+            motivo: `Liberación de mesa ${mesa.numero_mesa} (Cancelación masiva)`,
+            registrado_por: atendidoPor,
+            fecha_hora: new Date().toISOString()
+          });
+        }
+      });
+      
+      // Resetear mesa
+      mesa.estado = 'DISPONIBLE';
+      mesa.cliente_nombre = '';
+      mesa.consumos = [];
+      
       saveMockData(data);
       return mesa;
     }
@@ -691,25 +734,27 @@ export const mockDb = {
       const prodIdx = data.productos.findIndex(p => p.id === consumo.producto_id);
       if (prodIdx !== -1) {
         const prodActual = data.productos[prodIdx];
+        
+        if (prodActual.stock_actual < consumo.cantidad) {
+          throw new Error(`Stock insuficiente de ${prodActual.nombre}. Solo quedan ${prodActual.stock_actual} unidades.`);
+        }
+
         if (prodActual.tiene_receta) {
           mockDb._descontarInsumosReceta(data, prodActual, consumo.cantidad);
-        } else {
-          if (prodActual.stock_actual < consumo.cantidad) {
-            throw new Error(`Stock insuficiente. Solo quedan ${prodActual.stock_actual} unidades.`);
-          }
-          prodActual.stock_actual -= consumo.cantidad;
-          data.movimientos.unshift({
-            id: 'mov-' + Date.now(),
-            producto_id: prodActual.id,
-            producto_nombre: prodActual.nombre,
-            sede_id: mesa.sede_id,
-            tipo: 'EGRESO',
-            cantidad: consumo.cantidad,
-            motivo: `Consumo en ${mesa.numero_mesa}`,
-            registrado_por: consumo.registrado_por,
-            fecha_hora: new Date().toISOString()
-          });
         }
+
+        prodActual.stock_actual -= consumo.cantidad;
+        data.movimientos.unshift({
+          id: 'mov-' + Date.now(),
+          producto_id: prodActual.id,
+          producto_nombre: prodActual.nombre,
+          sede_id: mesa.sede_id,
+          tipo: 'EGRESO',
+          cantidad: consumo.cantidad,
+          motivo: `Consumo en ${mesa.numero_mesa}`,
+          registrado_por: consumo.registrado_por,
+          fecha_hora: new Date().toISOString()
+        });
       }
 
       const consumoExistente = mesa.consumos.find(c => c.producto_id === consumo.producto_id);
@@ -750,21 +795,21 @@ export const mockDb = {
           if (prodActual.tiene_receta) {
              // Es Comida: reintegramos insumos
              mockDb._reintegrarInsumosReceta(data, prodActual, cons.cantidad);
-          } else {
-             // Es Bebida: reintegramos stock normal
-             prodActual.stock_actual += cons.cantidad;
-             data.movimientos.unshift({
-               id: 'mov-' + Date.now(),
-               producto_id: cons.producto_id,
-               producto_nombre: cons.nombre,
-               sede_id: mesa.sede_id,
-               tipo: 'INGRESO',
-               cantidad: cons.cantidad,
-               motivo: `Cancelación/Reintegro de consumo de ${mesa.numero_mesa}`,
-               registrado_por: atendidoPor,
-               fecha_hora: new Date().toISOString()
-             });
           }
+          
+          // Reintegramos stock normal del producto
+          prodActual.stock_actual += cons.cantidad;
+          data.movimientos.unshift({
+            id: 'mov-' + Date.now(),
+            producto_id: cons.producto_id,
+            producto_nombre: cons.nombre,
+            sede_id: mesa.sede_id,
+            tipo: 'INGRESO',
+            cantidad: cons.cantidad,
+            motivo: `Cancelación/Reintegro de consumo de ${mesa.numero_mesa}`,
+            registrado_por: atendidoPor,
+            fecha_hora: new Date().toISOString()
+          });
         }
 
         mesa.consumos.splice(consIdx, 1);
@@ -798,25 +843,26 @@ export const mockDb = {
         if (prodIdx !== -1) {
           const prodActual = data.productos[prodIdx];
           
+          if (prodActual.stock_actual < item.cantidad) {
+            throw new Error(`Stock insuficiente para ${item.nombre}.`);
+          }
+
           if (prodActual.tiene_receta) {
              mockDb._descontarInsumosReceta(data, prodActual, item.cantidad);
-          } else {
-            if (prodActual.stock_actual < item.cantidad) {
-              throw new Error(`Stock insuficiente para ${item.nombre}.`);
-            }
-            prodActual.stock_actual -= item.cantidad;
-            data.movimientos.unshift({
-              id: 'mov-' + Date.now() + '-' + item.producto_id,
-              producto_id: item.producto_id,
-              producto_nombre: item.nombre,
-              sede_id: venta.sede_id,
-              tipo: 'EGRESO',
-              cantidad: item.cantidad,
-              motivo: 'Venta Directa POS',
-              registrado_por: venta.atendido_por,
-              fecha_hora: new Date().toISOString()
-            });
           }
+
+          prodActual.stock_actual -= item.cantidad;
+          data.movimientos.unshift({
+            id: 'mov-' + Date.now() + '-' + item.producto_id,
+            producto_id: item.producto_id,
+            producto_nombre: item.nombre,
+            sede_id: venta.sede_id,
+            tipo: 'EGRESO',
+            cantidad: item.cantidad,
+            motivo: 'Venta Directa POS',
+            registrado_por: venta.atendido_por,
+            fecha_hora: new Date().toISOString()
+          });
         }
       });
     }
@@ -858,20 +904,20 @@ export const mockDb = {
           const prodActual = data.productos[prodIdx];
           if (prodActual.tiene_receta) {
              mockDb._reintegrarInsumosReceta(data, prodActual, item.cantidad);
-          } else {
-            prodActual.stock_actual += item.cantidad;
-            data.movimientos.unshift({
-              id: 'mov-anu-' + Date.now() + '-' + item.producto_id,
-              producto_id: prodActual.id,
-              producto_nombre: prodActual.nombre,
-              sede_id: venta.sede_id,
-              tipo: 'INGRESO',
-              cantidad: item.cantidad,
-              motivo: `Anulación de Venta: ${razonAnulacion}`,
-              registrado_por: atendidoPor,
-              fecha_hora: new Date().toISOString()
-            });
           }
+          
+          prodActual.stock_actual += item.cantidad;
+          data.movimientos.unshift({
+            id: 'mov-anu-' + Date.now() + '-' + item.producto_id,
+            producto_id: prodActual.id,
+            producto_nombre: prodActual.nombre,
+            sede_id: venta.sede_id,
+            tipo: 'INGRESO',
+            cantidad: item.cantidad,
+            motivo: `Anulación de Venta: ${razonAnulacion}`,
+            registrado_por: atendidoPor,
+            fecha_hora: new Date().toISOString()
+          });
         }
       });
 

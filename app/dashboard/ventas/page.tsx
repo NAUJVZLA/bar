@@ -191,7 +191,7 @@ export default function VentasPage() {
     if (razon === null || !razon.trim()) return;
 
     try {
-      mockDb.anularVenta(ventaId, razon.trim());
+      mockDb.anularVenta(ventaId, razon.trim(), atendidoPor || 'Administrador');
       setSuccessMsg(`Venta #${ventaId} anulada con éxito. Stock restaurado.`);
       loadSedeData();
       window.dispatchEvent(new Event('sedeChanged')); // Actualizar dashboard y KPIs
