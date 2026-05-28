@@ -12,8 +12,10 @@ interface CartItem {
 export default function VentasPage() {
   const [activeSedeId, setActiveSedeId] = useState('');
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [ventas, setVentas] = useState<Venta[]>([]); // Para el historial
   const [busqueda, setBusqueda] = useState('');
   const [categoriaActiva, setCategoriaActiva] = useState('TODOS');
+  const [activeTab, setActiveTab] = useState<'POS' | 'HISTORIAL'>('POS');
   
   // Cart & Checkout state
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -34,6 +36,7 @@ export default function VentasPage() {
     const currentSedeId = localStorage.getItem('alico_active_sede') || 'sede-norte';
     setActiveSedeId(currentSedeId);
     setProductos(mockDb.getProductos(currentSedeId));
+    setVentas(mockDb.getVentas(currentSedeId).sort((a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime()));
   };
 
   useEffect(() => {
@@ -183,16 +186,50 @@ export default function VentasPage() {
     }
   };
 
+  const handleAnularVenta = (ventaId: string) => {
+    const razon = window.prompt('¿Cuál es la razón de la anulación? El inventario será restaurado a bodega.');
+    if (razon === null || !razon.trim()) return;
+
+    try {
+      mockDb.anularVenta(ventaId, razon.trim());
+      setSuccessMsg(`Venta #${ventaId} anulada con éxito. Stock restaurado.`);
+      loadSedeData();
+      window.dispatchEvent(new Event('sedeChanged')); // Actualizar dashboard y KPIs
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error al anular la venta.');
+      setTimeout(() => setErrorMsg(''), 3000);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-white font-sans">Terminal POS</h1>
-        <p className="text-xs text-zinc-400 font-semibold mt-1">Registra ventas directas en barra de forma inmediata.</p>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-white font-sans">Terminal POS</h1>
+          <p className="text-xs text-zinc-400 font-semibold mt-1">Registra ventas directas en barra de forma inmediata.</p>
+        </div>
+        
+        {/* Tabs switcher */}
+        <div className="flex bg-black/40 border border-white/10 rounded-xl p-1">
+          <button 
+            onClick={() => setActiveTab('POS')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'POS' ? 'bg-amber-500 text-black shadow-md' : 'text-zinc-400 hover:text-white'}`}
+          >
+            Nueva Venta
+          </button>
+          <button 
+            onClick={() => setActiveTab('HISTORIAL')}
+            className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${activeTab === 'HISTORIAL' ? 'bg-amber-500 text-black shadow-md' : 'text-zinc-400 hover:text-white'}`}
+          >
+            Historial
+          </button>
+        </div>
       </div>
 
-      {/* Grid de Terminal */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      {activeTab === 'POS' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start animate-fade-in">
         
         {/* LADO IZQUIERDO: Catálogo y Buscador (Ocupa 2 columnas) */}
         <div className="lg:col-span-2 space-y-4">
@@ -486,6 +523,105 @@ export default function VentasPage() {
         </div>
 
       </div>
+      )}
+
+      {/* VISTA HISTORIAL */}
+      {activeTab === 'HISTORIAL' && (
+        <div className="glass-card rounded-2xl p-6 border border-white/5 animate-fade-in">
+          <div className="flex items-center justify-between pb-4 border-b border-white/5 mb-4">
+            <h2 className="text-sm font-black text-white uppercase tracking-widest">Historial de Ventas</h2>
+            <span className="text-[10px] bg-zinc-900 border border-white/10 text-zinc-400 py-1 px-3 rounded-lg font-bold">
+              {ventas.length} Transacciones
+            </span>
+          </div>
+
+          {(errorMsg || successMsg) && (
+            <div className={`p-3 rounded-xl border text-xs font-semibold mb-4 ${
+              errorMsg 
+                ? 'bg-red-950/20 border-red-500/20 text-red-300' 
+                : 'bg-emerald-950/20 border-emerald-500/20 text-emerald-300'
+            }`}>
+              {errorMsg || successMsg}
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-white/10 text-[10px] font-black text-zinc-500 uppercase tracking-wider">
+                  <th className="p-3">ID / Fecha</th>
+                  <th className="p-3">Cliente</th>
+                  <th className="p-3">Atendido Por</th>
+                  <th className="p-3">Total</th>
+                  <th className="p-3">Estado</th>
+                  <th className="p-3 text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-xs">
+                {ventas.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="p-6 text-center text-zinc-500 font-semibold">
+                      No hay ventas registradas en esta sede.
+                    </td>
+                  </tr>
+                ) : (
+                  ventas.map(venta => (
+                    <tr key={venta.id} className={`transition-all hover:bg-white/2 ${venta.estado === 'ANULADA' ? 'opacity-50' : ''}`}>
+                      <td className="p-3">
+                        <div className="font-mono text-zinc-300">#{venta.id.slice(0, 8)}</div>
+                        <div className="text-[9px] text-zinc-500 mt-1">{new Date(venta.fecha_hora).toLocaleString('es-CO')}</div>
+                      </td>
+                      <td className="p-3">
+                        <span className="font-bold text-white">{venta.cliente_nombre || 'Cliente General'}</span>
+                      </td>
+                      <td className="p-3 text-zinc-400">{venta.atendido_por}</td>
+                      <td className="p-3 font-bold text-amber-500">
+                        ${venta.total.toLocaleString('es-CO')}
+                      </td>
+                      <td className="p-3">
+                        {venta.estado === 'ANULADA' ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="inline-block px-2 py-0.5 bg-red-500/20 text-red-400 border border-red-500/20 rounded text-[9px] font-black uppercase max-w-fit">
+                              ANULADA
+                            </span>
+                            <span className="text-[9px] text-red-400/70" title={venta.razon_anulacion}>
+                              {venta.razon_anulacion}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="inline-block px-2 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded text-[9px] font-black uppercase">
+                            COMPLETADA
+                          </span>
+                        )}
+                      </td>
+                      <td className="p-3 text-right space-x-2">
+                        <button
+                          onClick={() => setCompletedVenta(venta)}
+                          className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-white/10 hover:bg-zinc-800 text-zinc-300 hover:text-white transition-colors"
+                          title="Ver Ticket"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                            <path fillRule="evenodd" d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                        {venta.estado !== 'ANULADA' && (
+                          <button
+                            onClick={() => handleAnularVenta(venta.id)}
+                            className="px-2.5 py-1.5 rounded-lg bg-red-950/30 border border-red-500/20 hover:bg-red-500 hover:text-white text-red-400 font-bold transition-all"
+                            title="Anular Venta"
+                          >
+                            Anular
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* MODAL DE TICKET PREVISUALIZADOR Y ACCIÓN DE IMPRESIÓN */}
       {completedVenta && (

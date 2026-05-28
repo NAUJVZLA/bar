@@ -60,8 +60,9 @@ export interface ConsumoItem {
   producto_id: string;
   nombre: string;
   cantidad: number;
-  precio_unitario: number;
   registrado_por: string;
+  cliente_nombre?: string;
+  entregado_por?: string;
 }
 
 export interface Mesa {
@@ -101,6 +102,8 @@ export interface Venta {
   atendido_por: string;
   fecha_hora: string;
   es_directa?: boolean;
+  estado?: 'COMPLETADA' | 'ANULADA';
+  razon_anulacion?: string;
   items: VentaItem[];
 }
 
@@ -637,15 +640,21 @@ export const mockDb = {
     const data = getMockData();
     const idx = data.mesas.findIndex(m => m.id === mesaId);
     if (idx !== -1) {
-      data.mesas[idx].estado = estado;
+  updateMesaEstado: (mesaId: string, estado: 'DISPONIBLE' | 'OCUPADA' | 'PAGANDO', nuevaMesa?: Partial<Mesa>): Mesa | null => {
+    const data = getMockData();
+    const idx = data.mesas.findIndex(m => m.id === mesaId);
+    if (idx !== -1) {
+      const mesa = data.mesas[idx];
+      mesa.estado = estado;
       if (estado === 'DISPONIBLE') {
-        data.mesas[idx].cliente_nombre = '';
-        data.mesas[idx].consumos = [];
-      } else if (clienteNombre) {
-        data.mesas[idx].cliente_nombre = clienteNombre;
+        mesa.cliente_nombre = '';
+        mesa.consumos = [];
+      } else if (nuevaMesa) {
+        mesa.numero_mesa = nuevaMesa.numero_mesa || mesa.numero_mesa;
+        mesa.cliente_nombre = nuevaMesa.cliente_nombre || mesa.cliente_nombre;
       }
       saveMockData(data);
-      return data.mesas[idx];
+      return mesa;
     }
     return null;
   },
@@ -678,50 +687,48 @@ export const mockDb = {
     }
   },
 
-  agregarConsumoMesa: (mesaId: string, producto: Producto, cantidad: number, atendidoPor: string): Mesa | null => {
+  agregarConsumoMesa: (mesaId: string, consumo: Omit<ConsumoItem, 'id'>): Mesa | null => {
     const data = getMockData();
-    const idx = data.mesas.findIndex(m => m.id === mesaId);
-    if (idx !== -1) {
-      const mesa = data.mesas[idx];
-      
-      const prodIdx = data.productos.findIndex(p => p.id === producto.id);
+    const mesaIdx = data.mesas.findIndex(m => m.id === mesaId);
+    if (mesaIdx !== -1) {
+      const mesa = data.mesas[mesaIdx];
+      const prodIdx = data.productos.findIndex(p => p.id === consumo.producto_id);
       if (prodIdx !== -1) {
         const prodActual = data.productos[prodIdx];
-
         if (prodActual.tiene_receta) {
-          // Es Comida: descontamos insumos
-          mockDb._descontarInsumosReceta(data, prodActual, cantidad);
+          mockDb._descontarInsumosReceta(data, prodActual, consumo.cantidad);
         } else {
-          // Es Bebida/Varios: descontamos stock normal
-          if (prodActual.stock_actual < cantidad) {
+          if (prodActual.stock_actual < consumo.cantidad) {
             throw new Error(`Stock insuficiente. Solo quedan ${prodActual.stock_actual} unidades.`);
           }
-          prodActual.stock_actual -= cantidad;
+          prodActual.stock_actual -= consumo.cantidad;
           data.movimientos.unshift({
             id: 'mov-' + Date.now(),
-            producto_id: producto.id,
-            producto_nombre: producto.nombre,
+            producto_id: prodActual.id,
+            producto_nombre: prodActual.nombre,
             sede_id: mesa.sede_id,
             tipo: 'EGRESO',
-            cantidad: cantidad,
+            cantidad: consumo.cantidad,
             motivo: `Consumo en ${mesa.numero_mesa}`,
-            registrado_por: atendidoPor,
+            registrado_por: consumo.registrado_por,
             fecha_hora: new Date().toISOString()
           });
         }
       }
 
-      const consumoExistente = mesa.consumos.find(c => c.producto_id === producto.id);
+      const consumoExistente = mesa.consumos.find(c => c.producto_id === consumo.producto_id);
       if (consumoExistente) {
-        consumoExistente.cantidad += cantidad;
+        consumoExistente.cantidad += consumo.cantidad;
       } else {
         mesa.consumos.push({
-          id: 'c-' + Date.now(),
-          producto_id: producto.id,
-          nombre: producto.nombre,
-          cantidad: cantidad,
-          precio_unitario: producto.precio_venta,
-          registrado_por: atendidoPor
+          id: 'cons-' + Date.now(),
+          producto_id: consumo.producto_id,
+          nombre: consumo.nombre,
+          cantidad: consumo.cantidad,
+          precio_unitario: consumo.precio_unitario,
+          registrado_por: consumo.registrado_por,
+          cliente_nombre: consumo.cliente_nombre,
+          entregado_por: consumo.entregado_por
         });
       }
       mesa.estado = 'OCUPADA';
@@ -840,6 +847,45 @@ export const mockDb = {
     data.ventas.unshift(newVenta);
     saveMockData(data);
     return newVenta;
+  },
+  anularVenta: (ventaId: string, razonAnulacion: string, atendidoPor: string): Venta | null => {
+    const data = getMockData();
+    const vIdx = data.ventas.findIndex(v => v.id === ventaId);
+    if (vIdx !== -1) {
+      const venta = data.ventas[vIdx];
+      if (venta.estado === 'ANULADA') return null;
+
+      // Reintegrar inventario
+      venta.items.forEach(item => {
+        const prodIdx = data.productos.findIndex(p => p.id === item.producto_id);
+        if (prodIdx !== -1) {
+          const prodActual = data.productos[prodIdx];
+          if (prodActual.tiene_receta) {
+             mockDb._reintegrarInsumosReceta(data, prodActual, item.cantidad);
+          } else {
+            prodActual.stock_actual += item.cantidad;
+            data.movimientos.unshift({
+              id: 'mov-anu-' + Date.now() + '-' + item.producto_id,
+              producto_id: prodActual.id,
+              producto_nombre: prodActual.nombre,
+              sede_id: venta.sede_id,
+              tipo: 'INGRESO',
+              cantidad: item.cantidad,
+              motivo: `Anulación de Venta: ${razonAnulacion}`,
+              registrado_por: atendidoPor,
+              fecha_hora: new Date().toISOString()
+            });
+          }
+        }
+      });
+
+      venta.estado = 'ANULADA';
+      venta.razon_anulacion = razonAnulacion;
+      
+      saveMockData(data);
+      return venta;
+    }
+    return null;
   },
   
   getMovimientos: (sedeId?: string): Movimiento[] => {

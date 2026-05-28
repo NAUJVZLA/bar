@@ -28,6 +28,12 @@ export default function MesasPage() {
   const [selectedProdId, setSelectedProdId] = useState('');
   const [cantidadInput, setCantidadInput] = useState(1);
   const [atendidoPorConsumo, setAtendidoPorConsumo] = useState('');
+  const [clienteNombreConsumo, setClienteNombreConsumo] = useState('');
+  const [entregadoPorConsumo, setEntregadoPorConsumo] = useState('');
+
+  // Edición nombre mesa
+  const [isEditingMesaName, setIsEditingMesaName] = useState(false);
+  const [mesaNameInput, setMesaNameInput] = useState('');
 
   // Checkout form
   const [metodoPago, setMetodoPago] = useState<'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA' | 'CREDITO'>('EFECTIVO');
@@ -67,6 +73,9 @@ export default function MesasPage() {
     setSelectedProdId('');
     setCantidadInput(1);
     setAtendidoPorConsumo('');
+    setClienteNombreConsumo('');
+    setEntregadoPorConsumo('');
+    setIsEditingMesaName(false);
     setErrorMsg('');
     setSuccessMsg('');
   };
@@ -102,6 +111,18 @@ export default function MesasPage() {
     // Cargar mesero guardado
     const cachedWaiter = localStorage.getItem('alico_last_waiter') || '';
     setAtendidoPorConsumo(cachedWaiter);
+    setEntregadoPorConsumo(cachedWaiter); // Sugerir el mismo por defecto
+  };
+
+  const submitEditMesaName = () => {
+    if (!selectedMesa || !mesaNameInput.trim()) return;
+    mockDb.updateMesaEstado(selectedMesa.id, selectedMesa.estado, { numero_mesa: mesaNameInput.trim() });
+    setSuccessMsg('Nombre de mesa actualizado.');
+    setIsEditingMesaName(false);
+    loadSedeData();
+    const updatedMesa = mockDb.getMesas(activeSedeId).find(m => m.id === selectedMesa.id);
+    if (updatedMesa) setSelectedMesa(updatedMesa);
+    setTimeout(() => setSuccessMsg(''), 2000);
   };
 
   // 3. AGREGAR CONSUMO A MESA
@@ -126,7 +147,15 @@ export default function MesasPage() {
     if (!prod) return;
 
     try {
-      mockDb.agregarConsumoMesa(selectedMesa.id, prod, cantidadInput, atendidoPorConsumo);
+      mockDb.agregarConsumoMesa(selectedMesa.id, {
+        producto_id: prod.id,
+        nombre: prod.nombre,
+        cantidad: cantidadInput,
+        precio_unitario: prod.precio_venta,
+        registrado_por: atendidoPorConsumo,
+        cliente_nombre: clienteNombreConsumo.trim() || undefined,
+        entregado_por: entregadoPorConsumo.trim() || undefined
+      });
       
       // Guardar mesero
       localStorage.setItem('alico_last_waiter', atendidoPorConsumo);
@@ -400,10 +429,39 @@ export default function MesasPage() {
             {/* Header del detalle */}
             <div className="flex items-center justify-between pb-3 border-b border-white/5 mb-4">
               <div>
-                <span className="text-xs font-black uppercase bg-amber-500 text-black px-2.5 py-0.5 rounded-md">
-                  {selectedMesa.numero_mesa}
-                </span>
-                <span className="text-[10px] text-zinc-400 ml-3 font-semibold">
+                <div className="flex items-center gap-2 mb-1">
+                  {isEditingMesaName ? (
+                    <div className="flex items-center gap-1">
+                      <input 
+                        type="text" 
+                        value={mesaNameInput} 
+                        onChange={(e) => setMesaNameInput(e.target.value)}
+                        className="h-6 px-2 text-[10px] rounded bg-zinc-900 border border-white/10 text-white w-32"
+                        autoFocus
+                      />
+                      <button onClick={submitEditMesaName} className="text-emerald-400 p-1 hover:text-emerald-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path fillRule="evenodd" d="M16.704 4.153a.75.75 0 01.143 1.052l-8 10.5a.75.75 0 01-1.127.075l-4.5-4.5a.75.75 0 011.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 011.05-.143z" clipRule="evenodd" /></svg>
+                      </button>
+                      <button onClick={() => setIsEditingMesaName(false)} className="text-red-400 p-1 hover:text-red-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-black uppercase bg-amber-500 text-black px-2.5 py-0.5 rounded-md">
+                        {selectedMesa.numero_mesa}
+                      </span>
+                      <button 
+                        onClick={() => { setMesaNameInput(selectedMesa.numero_mesa); setIsEditingMesaName(true); }}
+                        className="text-zinc-500 hover:text-white transition-colors"
+                        title="Editar nombre de la mesa"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4"><path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" /><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" /></svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <span className="text-[10px] text-zinc-400 font-semibold">
                   Cliente: <span className="text-white">{selectedMesa.cliente_nombre}</span>
                 </span>
               </div>
@@ -431,6 +489,12 @@ export default function MesasPage() {
                       <p className="text-[9px] text-zinc-500 mt-0.5">
                         {c.cantidad} U. • ${c.precio_unitario.toLocaleString('es-CO')} c/u
                       </p>
+                      {(c.cliente_nombre || c.entregado_por) && (
+                        <div className="flex flex-wrap gap-1.5 mt-1">
+                          {c.cliente_nombre && <span className="text-[8px] bg-blue-500/20 text-blue-300 border border-blue-500/20 px-1.5 py-0.5 rounded">Pidió: {c.cliente_nombre}</span>}
+                          {c.entregado_por && <span className="text-[8px] bg-purple-500/20 text-purple-300 border border-purple-500/20 px-1.5 py-0.5 rounded">Entregó: {c.entregado_por}</span>}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       <p className="text-[11px] font-extrabold text-white">
@@ -551,7 +615,7 @@ export default function MesasPage() {
 
                 <div>
                   <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
-                    Mesero Responsable
+                    Mesero que Registra
                   </label>
                   <input
                     type="text"
@@ -559,6 +623,34 @@ export default function MesasPage() {
                     value={atendidoPorConsumo}
                     onChange={(e) => setAtendidoPorConsumo(e.target.value)}
                     placeholder="Ej. Diana Cajera"
+                    className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+                    ¿Quién pidió? (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={clienteNombreConsumo}
+                    onChange={(e) => setClienteNombreConsumo(e.target.value)}
+                    placeholder="Ej. VIP Sr. Carlos"
+                    className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+                    ¿Quién entrega? (Opcional)
+                  </label>
+                  <input
+                    type="text"
+                    value={entregadoPorConsumo}
+                    onChange={(e) => setEntregadoPorConsumo(e.target.value)}
+                    placeholder="Ej. Juan Mesero"
                     className="w-full h-9 px-3 rounded-lg glass-input text-xs text-white"
                   />
                 </div>
