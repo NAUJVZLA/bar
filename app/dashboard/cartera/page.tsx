@@ -265,6 +265,27 @@ export default function CarteraPage() {
     }
   };
 
+  const handleLimpiarCreditosPagados = () => {
+    const pagados = creditos.filter(c => c.estado === 'PAGADO');
+    if (pagados.length === 0) {
+      alert('No hay cuentas con estado "PAGADO" en el historial de esta sede para limpiar.');
+      return;
+    }
+
+    if (!confirm('¿Deseas limpiar todas las cuentas cobradas/pagadas del historial? Las cuentas con saldo pendiente se mantendrán intactas.')) {
+      return;
+    }
+
+    try {
+      mockDb.limpiarCreditosPagados(activeSedeId);
+      setSuccessMsg('Historial de cuentas pagadas limpiado con éxito.');
+      loadSedeData();
+      setTimeout(() => setSuccessMsg(''), 3000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error al limpiar historial.');
+    }
+  };
+
   const handleLimpiarPrestamosDevueltos = () => {
     const devueltos = prestamos.filter(p => p.estado === 'DEVUELTO');
     if (devueltos.length === 0) {
@@ -349,15 +370,26 @@ export default function CarteraPage() {
         {/* Buttons Action */}
         <div className="flex gap-2 flex-wrap justify-end">
           {activeTab === 'cuentas' ? (
-            <button
-              onClick={openAddCredit}
-              className="h-10 px-4 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/10"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4 text-black">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Registrar Crédito Manual
-            </button>
+            <>
+              <button
+                onClick={handleLimpiarCreditosPagados}
+                className="h-10 px-4 rounded-xl bg-red-950/20 border border-red-500/25 hover:bg-red-900/30 text-red-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4 text-red-400">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                </svg>
+                Limpiar Pagados
+              </button>
+              <button
+                onClick={openAddCredit}
+                className="h-10 px-4 rounded-xl btn-gold text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-md shadow-amber-500/10"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4 text-black">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Registrar Crédito Manual
+              </button>
+            </>
           ) : (
             <>
               <button

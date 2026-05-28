@@ -576,7 +576,7 @@ export const mockDb = {
     const data = getMockData();
     const newSede: Sede = { id: 'sede-' + Date.now(), ...sede };
     data.sedes.push(newSede);
-    saveMockData(data);
+    saveMockData({ sedes: data.sedes });
     return newSede;
   },
 
@@ -610,13 +610,13 @@ export const mockDb = {
       data.insumos.push(newInsumo);
       result = newInsumo;
     }
-    saveMockData(data);
+    saveMockData({ insumos: data.insumos });
     return result;
   },
   deleteInsumo: (id: string): boolean => {
     const data = getMockData();
     data.insumos = data.insumos.filter(i => i.id !== id);
-    saveMockData(data);
+    saveMockData({ insumos: data.insumos });
     deleteFromSupabase('insumos', id);
     return true;
   },
@@ -684,13 +684,13 @@ export const mockDb = {
       });
       result = newProd;
     }
-    saveMockData(data);
+    saveMockData({ productos: data.productos, movimientos: data.movimientos });
     return result;
   },
   deleteProducto: (id: string): boolean => {
     const data = getMockData();
     data.productos = data.productos.filter(p => p.id !== id);
-    saveMockData(data);
+    saveMockData({ productos: data.productos });
     deleteFromSupabase('productos', id);
     return true;
   },
@@ -713,7 +713,7 @@ export const mockDb = {
         mesa.numero_mesa = nuevaMesa.numero_mesa || mesa.numero_mesa;
         mesa.cliente_nombre = nuevaMesa.cliente_nombre || mesa.cliente_nombre;
       }
-      saveMockData(data);
+      saveMockData({ mesas: data.mesas });
       return mesa;
     }
     return null;
@@ -757,7 +757,7 @@ export const mockDb = {
       mesa.cliente_nombre = '';
       mesa.consumos = [];
       
-      saveMockData(data);
+      saveMockData({ mesas: data.mesas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos });
       return mesa;
     }
     return null;
@@ -838,7 +838,7 @@ export const mockDb = {
         });
       }
       mesa.estado = 'OCUPADA';
-      saveMockData(data);
+      saveMockData({ mesas: data.mesas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos });
       return mesa;
     }
     return null;
@@ -882,7 +882,7 @@ export const mockDb = {
           mesa.estado = 'DISPONIBLE';
           mesa.cliente_nombre = '';
         }
-        saveMockData(data);
+        saveMockData({ mesas: data.mesas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos });
         return mesa;
       }
     }
@@ -952,7 +952,7 @@ export const mockDb = {
     }
 
     data.ventas.unshift(newVenta);
-    saveMockData(data);
+    saveMockData({ ventas: data.ventas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos, creditos: data.creditos });
     return newVenta;
   },
   anularVenta: (ventaId: string, razonAnulacion: string, atendidoPor: string): Venta | null => {
@@ -989,7 +989,7 @@ export const mockDb = {
       venta.estado = 'ANULADA';
       venta.razon_anulacion = razonAnulacion;
       
-      saveMockData(data);
+      saveMockData({ ventas: data.ventas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos });
       return venta;
     }
     return null;
@@ -1032,7 +1032,7 @@ export const mockDb = {
       ...credito
     };
     data.creditos.unshift(newCredito);
-    saveMockData(data);
+    saveMockData({ creditos: data.creditos });
     return newCredito;
   },
   registrarAbonoCredito: (creditoId: string, montoAbono: number): CreditoCliente | null => {
@@ -1046,7 +1046,7 @@ export const mockDb = {
         cred.estado = 'PAGADO';
         cred.fecha_pago = new Date().toISOString();
       }
-      saveMockData(data);
+      saveMockData({ creditos: data.creditos });
       return cred;
     }
     return null;
@@ -1087,7 +1087,7 @@ export const mockDb = {
     }
 
     data.prestamos.unshift(newPrestamo);
-    saveMockData(data);
+    saveMockData({ prestamos: data.prestamos, productos: data.productos, movimientos: data.movimientos });
     return newPrestamo;
   },
   devolverPrestamo: (prestamoId: string, reintegrarStock?: boolean): PrestamoBotella | null => {
@@ -1116,7 +1116,7 @@ export const mockDb = {
         }
       }
 
-      saveMockData(data);
+      saveMockData({ prestamos: data.prestamos, productos: data.productos, movimientos: data.movimientos });
       return prestamo;
     }
     return null;
@@ -1124,7 +1124,7 @@ export const mockDb = {
   eliminarPrestamo: (prestamoId: string): boolean => {
     const data = getMockData();
     data.prestamos = data.prestamos.filter(p => p.id !== prestamoId);
-    saveMockData(data);
+    saveMockData({ prestamos: data.prestamos });
     deleteFromSupabase('prestamos', prestamoId);
     return true;
   },
@@ -1134,10 +1134,23 @@ export const mockDb = {
     if (devueltosSede.length === 0) return false;
     
     data.prestamos = data.prestamos.filter(p => !(p.sede_id === sedeId && p.estado === 'DEVUELTO'));
-    saveMockData(data);
+    saveMockData({ prestamos: data.prestamos });
     
     devueltosSede.forEach(p => {
       deleteFromSupabase('prestamos', p.id);
+    });
+    return true;
+  },
+  limpiarCreditosPagados: (sedeId: string): boolean => {
+    const data = getMockData();
+    const pagadosSede = data.creditos.filter(c => c.sede_id === sedeId && c.estado === 'PAGADO');
+    if (pagadosSede.length === 0) return false;
+    
+    data.creditos = data.creditos.filter(c => !(c.sede_id === sedeId && c.estado === 'PAGADO'));
+    saveMockData({ creditos: data.creditos });
+    
+    pagadosSede.forEach(c => {
+      deleteFromSupabase('creditos', c.id);
     });
     return true;
   },
@@ -1153,7 +1166,7 @@ export const mockDb = {
       ...cierre
     };
     data.cierres.unshift(newCierre);
-    saveMockData(data);
+    saveMockData({ cierres: data.cierres });
     return newCierre;
   },
   resetDbToDemo: async (): Promise<void> => {
