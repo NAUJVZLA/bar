@@ -305,9 +305,20 @@ export interface MockDataStore {
 export const syncTableToSupabase = async (table: keyof MockDataStore) => {
   if (isMockMode || !supabase) return;
   try {
-    const data = getMockData()[table];
+    let data = getMockData()[table];
     if (data.length > 0) {
-      const { error } = await supabase.from(table).upsert(data as any);
+      // Sanitización para evitar que Supabase rechace el upsert por columnas inexistentes
+      let payload = data;
+      if (table === 'productos') {
+        payload = (data as Producto[]).map(({ registrado_por, ...rest }) => rest) as any;
+      } else if (table === 'prestamos') {
+        payload = (data as PrestamoBotella[]).map(p => {
+          const { descontó_stock, ...rest } = p;
+          return { ...rest, desconto_stock: descontó_stock } as any;
+        });
+      }
+
+      const { error } = await supabase.from(table).upsert(payload as any);
       if (error) {
         console.error(`[Alico Sync] Error subiendo tabla ${table} a Supabase:`, error);
       }
@@ -986,12 +997,12 @@ export const mockDb = {
 
         await supabase.from('sedes').insert(INITIAL_SEDES);
         await supabase.from('insumos').insert(INITIAL_INSUMOS);
-        await supabase.from('productos').insert(INITIAL_PRODUCTS);
+        await supabase.from('productos').insert(INITIAL_PRODUCTS.map(({ registrado_por, ...rest }) => rest) as any);
         await supabase.from('mesas').insert(INITIAL_MESAS);
         await supabase.from('movimientos').insert(INITIAL_MOVIMIENTOS);
         await supabase.from('ventas').insert(INITIAL_VENTAS);
         await supabase.from('creditos').insert(INITIAL_CREDITOS);
-        await supabase.from('prestamos').insert(INITIAL_PRESTAMOS);
+        await supabase.from('prestamos').insert(INITIAL_PRESTAMOS.map(({ descontó_stock, ...rest }) => ({ ...rest, desconto_stock: descontó_stock })) as any);
       } catch (err) {
         console.error('Error reset remote Supabase:', err);
       }
