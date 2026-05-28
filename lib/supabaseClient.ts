@@ -154,6 +154,15 @@ export interface CierreCaja {
   ventas_count: number;
 }
 
+export interface AuditLog {
+  id: string;
+  sede_id: string;
+  usuario: string;
+  accion: string;
+  detalle: string;
+  fecha_hora: string;
+}
+
 // ==========================================
 // MOCK STATE INITIAL DATA
 // ==========================================
@@ -301,6 +310,7 @@ export interface MockDataStore {
   creditos: CreditoCliente[];
   prestamos: PrestamoBotella[];
   cierres: CierreCaja[];
+  auditoria: AuditLog[];
 }
 
 // ==========================================
@@ -346,6 +356,15 @@ export const syncTableToSupabase = async (table: keyof MockDataStore) => {
           fecha_pago: p.fecha_pago || null,
           registrado_por: p.registrado_por,
           notas: p.notas || null
+        })) as any;
+      } else if (table === 'auditoria') {
+        payload = (data as AuditLog[]).map((a: any) => ({
+          id: a.id,
+          sede_id: a.sede_id,
+          usuario: a.usuario,
+          accion: a.accion,
+          detalle: a.detalle,
+          fecha_hora: a.fecha_hora
         })) as any;
       } else {
         payload = (data as any[]).map((p: any) => {
@@ -418,6 +437,15 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     if (prestamosRes.error) throw prestamosRes.error;
     if (cierresRes.error) throw cierresRes.error;
 
+    // Cargar Auditoría de forma defensiva por si la tabla no existe en la BD del usuario
+    let auditoriaRes: any = { data: [] };
+    try {
+      const res = await supabase.from('auditoria').select('*');
+      if (!res.error) auditoriaRes = res;
+    } catch (e) {
+      console.warn('⚠️ [Alico Sync] La tabla "auditoria" no está creada en Supabase. Usando almacenamiento local.');
+    }
+
     // Parsear y sanitizar tipos de datos numéricos y mapear campos de base de datos
     const parsedInsumos = (insumosRes.data || []).map((i: any) => ({
       ...i,
@@ -483,6 +511,10 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       ventas_count: Number(c.ventas_count) || 0
     }));
 
+    const parsedAuditoria = (auditoriaRes.data || []).map((a: any) => ({
+      ...a
+    }));
+
     // Actualizar caché local instantáneamente
     setLocalStorage('alico_sedes', sedesRes.data || []);
     setLocalStorage('alico_insumos', parsedInsumos);
@@ -493,6 +525,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     setLocalStorage('alico_creditos', parsedCreditos);
     setLocalStorage('alico_prestamos', parsedPrestamos);
     setLocalStorage('alico_cierres', parsedCierres);
+    setLocalStorage('alico_auditoria', parsedAuditoria);
 
     console.log('🟢 [Alico Sync] Base de datos local sincronizada con la nube.');
     window.dispatchEvent(new Event('supabase_synced'));
@@ -550,6 +583,7 @@ export const getMockData = (): MockDataStore => {
     creditos: getLocalStorage<CreditoCliente[]>('alico_creditos', INITIAL_CREDITOS),
     prestamos: getLocalStorage<PrestamoBotella[]>('alico_prestamos', INITIAL_PRESTAMOS),
     cierres: getLocalStorage<CierreCaja[]>('alico_cierres', []),
+    auditoria: getLocalStorage<AuditLog[]>('alico_auditoria', []),
   };
 };
 
@@ -592,6 +626,10 @@ export const saveMockData = (newData: Partial<MockDataStore>): void => {
   if (newData.cierres) {
     setLocalStorage('alico_cierres', newData.cierres);
     syncQueue = syncQueue.then(() => syncTableToSupabase('cierres')) as Promise<void>;
+  }
+  if (newData.auditoria) {
+    setLocalStorage('alico_auditoria', newData.auditoria);
+    syncQueue = syncQueue.then(() => syncTableToSupabase('auditoria')) as Promise<void>;
   }
 
   syncQueue.finally(() => {
@@ -650,11 +688,22 @@ export const mockDb = {
     saveMockData({ insumos: data.insumos });
     return result;
   },
-  deleteInsumo: (id: string): boolean => {
+  deleteInsumo: (id: string, usuario?: string): boolean => {
     const data = getMockData();
+    const ins = data.insumos.find(i => i.id === id);
+    const insNombre = ins ? ins.nombre : id;
+    const sedeId = ins ? ins.sede_id : 'sede-norte';
+    
     data.insumos = data.insumos.filter(i => i.id !== id);
     saveMockData({ insumos: data.insumos });
     deleteFromSupabase('insumos', id);
+    
+    mockDb.registrarAuditLog(
+      sedeId,
+      usuario || 'Administrador',
+      'ELIMINAR_INSUMO',
+      `Eliminó el insumo "${insNombre}" (ID: ${id}) del catálogo de insumos de cocina.`
+    );
     return true;
   },
 
@@ -724,11 +773,22 @@ export const mockDb = {
     saveMockData({ productos: data.productos, movimientos: data.movimientos });
     return result;
   },
-  deleteProducto: (id: string): boolean => {
+  deleteProducto: (id: string, usuario?: string): boolean => {
     const data = getMockData();
+    const prod = data.productos.find(p => p.id === id);
+    const prodNombre = prod ? prod.nombre : id;
+    const sedeId = prod ? prod.sede_id : 'sede-norte';
+    
     data.productos = data.productos.filter(p => p.id !== id);
     saveMockData({ productos: data.productos });
     deleteFromSupabase('productos', id);
+    
+    mockDb.registrarAuditLog(
+      sedeId,
+      usuario || 'Administrador',
+      'ELIMINAR_PRODUCTO',
+      `Eliminó el producto "${prodNombre}" (ID: ${id}) del catálogo de inventario.`
+    );
     return true;
   },
 
@@ -992,7 +1052,7 @@ export const mockDb = {
     saveMockData({ ventas: data.ventas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos, creditos: data.creditos });
     return newVenta;
   },
-  anularVenta: (ventaId: string, razonAnulacion: string, atendidoPor: string): Venta | null => {
+  anularVenta: (ventaId: string, razonAnulacion: string, atendidoPor: string, usuario?: string): Venta | null => {
     const data = getMockData();
     const vIdx = data.ventas.findIndex(v => v.id === ventaId);
     if (vIdx !== -1) {
@@ -1027,6 +1087,15 @@ export const mockDb = {
       venta.razon_anulacion = razonAnulacion;
       
       saveMockData({ ventas: data.ventas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos });
+      
+      // Registrar en Auditoría
+      mockDb.registrarAuditLog(
+        venta.sede_id,
+        usuario || atendidoPor || 'Administrador',
+        'ANULAR_VENTA',
+        `Anuló la venta #${ventaId} (Monto total: $${venta.total.toLocaleString('es-CO')}). Razón: "${razonAnulacion}".`
+      );
+      
       return venta;
     }
     return null;
@@ -1158,18 +1227,30 @@ export const mockDb = {
     }
     return null;
   },
-  eliminarPrestamo: (prestamoId: string): boolean => {
+  eliminarPrestamo: (prestamoId: string, usuario?: string): boolean => {
     const data = getMockData();
+    const pr = data.prestamos.find(p => p.id === prestamoId);
+    const detalle = pr ? `Préstamo de ${pr.cantidad} botellas de ${pr.botella_nombre} al cliente ${pr.cliente_nombre}.` : prestamoId;
+    const SedeId = pr ? pr.sede_id : 'sede-norte';
+    
     data.prestamos = data.prestamos.filter(p => p.id !== prestamoId);
     saveMockData({ prestamos: data.prestamos });
     deleteFromSupabase('prestamos', prestamoId);
+    
+    mockDb.registrarAuditLog(
+      SedeId,
+      usuario || 'Administrador',
+      'ELIMINAR_PRESTAMO',
+      `Eliminó un registro de préstamo del historial: ${detalle}`
+    );
     return true;
   },
-  limpiarPrestamosDevueltos: (sedeId: string): boolean => {
+  limpiarPrestamosDevueltos: (sedeId: string, usuario?: string): boolean => {
     const data = getMockData();
     const devueltosSede = data.prestamos.filter(p => p.sede_id === sedeId && p.estado === 'DEVUELTO');
     if (devueltosSede.length === 0) return false;
     
+    const cantidad = devueltosSede.reduce((sum, p) => sum + p.cantidad, 0);
     data.prestamos = data.prestamos.filter(p => !(p.sede_id === sedeId && p.estado === 'DEVUELTO'));
     
     activeSyncsCount++;
@@ -1193,13 +1274,21 @@ export const mockDb = {
         activeSyncsCount = Math.max(0, activeSyncsCount - 1);
       }, 800);
     }
+    
+    mockDb.registrarAuditLog(
+      sedeId,
+      usuario || 'Administrador',
+      'LIMPIAR_PRESTAMOS_DEVUELTOS',
+      `Limpió todos los envases marcados como DEVUELTOS del historial (Total: ${devueltosSede.length} registros, ${cantidad} botellas).`
+    );
     return true;
   },
-  limpiarCreditosPagados: (sedeId: string): boolean => {
+  limpiarCreditosPagados: (sedeId: string, usuario?: string): boolean => {
     const data = getMockData();
     const pagadosSede = data.creditos.filter(c => c.sede_id === sedeId && c.estado === 'PAGADO');
     if (pagadosSede.length === 0) return false;
     
+    const montoTotal = pagadosSede.reduce((sum, c) => sum + c.total_deuda, 0);
     data.creditos = data.creditos.filter(c => !(c.sede_id === sedeId && c.estado === 'PAGADO'));
     
     activeSyncsCount++;
@@ -1223,6 +1312,13 @@ export const mockDb = {
         activeSyncsCount = Math.max(0, activeSyncsCount - 1);
       }, 800);
     }
+    
+    mockDb.registrarAuditLog(
+      sedeId,
+      usuario || 'Administrador',
+      'LIMPIAR_CREDITOS_PAGADOS',
+      `Limpió todos los créditos marcados como PAGADOS del historial (Total: ${pagadosSede.length} cuentas, Monto: $${montoTotal.toLocaleString('es-CO')}).`
+    );
     return true;
   },
   getCierres: (sedeId?: string): CierreCaja[] => {
@@ -1239,6 +1335,26 @@ export const mockDb = {
     data.cierres.unshift(newCierre);
     saveMockData({ cierres: data.cierres });
     return newCierre;
+  },
+  registrarAuditLog: (sedeId: string, usuario: string, accion: string, detalle: string): AuditLog => {
+    const data = getMockData();
+    const newLog: AuditLog = {
+      id: 'aud-' + Date.now(),
+      sede_id: sedeId,
+      usuario: usuario || 'Sistema',
+      accion: accion,
+      detalle: detalle,
+      fecha_hora: new Date().toISOString()
+    };
+    data.auditoria = data.auditoria || [];
+    data.auditoria.unshift(newLog);
+    saveMockData({ auditoria: data.auditoria });
+    return newLog;
+  },
+  getAuditLogs: (sedeId?: string): AuditLog[] => {
+    const data = getMockData();
+    const logs = data.auditoria || [];
+    return sedeId ? logs.filter(l => l.sede_id === sedeId) : logs;
   },
   resetDbToDemo: async (): Promise<void> => {
     setLocalStorage('alico_sedes', INITIAL_SEDES);

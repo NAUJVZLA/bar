@@ -277,7 +277,16 @@ export default function CarteraPage() {
     }
 
     try {
-      mockDb.limpiarCreditosPagados(activeSedeId);
+      let sessionUser = 'Administrador';
+      try {
+        const sessionStr = localStorage.getItem('alico_session');
+        if (sessionStr) {
+          const session = JSON.parse(sessionStr);
+          sessionUser = session.nombre || 'Administrador';
+        }
+      } catch (e) {}
+
+      mockDb.limpiarCreditosPagados(activeSedeId, sessionUser);
       setSuccessMsg('Historial de cuentas pagadas limpiado con éxito.');
       loadSedeData();
       setTimeout(() => setSuccessMsg(''), 3000);
@@ -293,12 +302,21 @@ export default function CarteraPage() {
       return;
     }
 
-    if (!confirm('¿Deseas limpiar todos los envases marcados como DEVUELTOS del historial? Los préstamos pendientes se mantendrán intactos.')) {
+    if (!confirm('¿Deseas limpiar todos los envases marcados como DEVUELTOS del historial? Los préstamos pendientes se mantendrán intactas.')) {
       return;
     }
 
     try {
-      mockDb.limpiarPrestamosDevueltos(activeSedeId);
+      let sessionUser = 'Administrador';
+      try {
+        const sessionStr = localStorage.getItem('alico_session');
+        if (sessionStr) {
+          const session = JSON.parse(sessionStr);
+          sessionUser = session.nombre || 'Administrador';
+        }
+      } catch (e) {}
+
+      mockDb.limpiarPrestamosDevueltos(activeSedeId, sessionUser);
       setSuccessMsg('Historial de envases devueltos limpiado con éxito.');
       loadSedeData();
       setTimeout(() => setSuccessMsg(''), 3000);
@@ -316,7 +334,16 @@ export default function CarteraPage() {
     if (!confirm(msg)) return;
 
     try {
-      mockDb.eliminarPrestamo(prestamoId);
+      let sessionUser = 'Administrador';
+      try {
+        const sessionStr = localStorage.getItem('alico_session');
+        if (sessionStr) {
+          const session = JSON.parse(sessionStr);
+          sessionUser = session.nombre || 'Administrador';
+        }
+      } catch (e) {}
+
+      mockDb.eliminarPrestamo(prestamoId, sessionUser);
       setSuccessMsg('Registro de préstamo eliminado del historial.');
       loadSedeData();
       setTimeout(() => setSuccessMsg(''), 3000);

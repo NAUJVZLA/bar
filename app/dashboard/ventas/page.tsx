@@ -191,7 +191,16 @@ export default function VentasPage() {
     if (razon === null || !razon.trim()) return;
 
     try {
-      mockDb.anularVenta(ventaId, razon.trim(), atendidoPor || 'Administrador');
+      let sessionUser = 'Administrador';
+      try {
+        const sessionStr = localStorage.getItem('alico_session');
+        if (sessionStr) {
+          const session = JSON.parse(sessionStr);
+          sessionUser = session.nombre || 'Administrador';
+        }
+      } catch (e) {}
+
+      mockDb.anularVenta(ventaId, razon.trim(), atendidoPor || 'Administrador', sessionUser);
       setSuccessMsg(`Venta #${ventaId} anulada con éxito. Stock restaurado.`);
       loadSedeData();
       window.dispatchEvent(new Event('sedeChanged')); // Actualizar dashboard y KPIs

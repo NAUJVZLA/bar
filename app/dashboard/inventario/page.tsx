@@ -146,18 +146,38 @@ export default function InventarioPage() {
 
   const handleDeleteProductClick = (id: string, name: string) => {
     if (!confirm(`¿Estás seguro de que deseas eliminar el producto "${name}"? Esta acción no se puede deshacer.`)) return;
-    mockDb.deleteProducto(id);
+    
+    let sessionUser = 'Administrador';
+    try {
+      const sessionStr = localStorage.getItem('alico_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        sessionUser = session.nombre || 'Administrador';
+      }
+    } catch (e) {}
+
+    mockDb.deleteProducto(id, sessionUser);
     setSuccessMsg('Producto eliminado con éxito.');
     loadSedeData();
-    setTimeout(() => setSuccessMsg(''), 2000);
+    setTimeout(() => setSuccessMsg(''), 3000);
   };
 
   const handleDeleteInsumoClick = (id: string, name: string) => {
-    if (!confirm(`¿Estás seguro de que deseas eliminar el insumo "${name}"? Verifica que no esté en uso en recetas.`)) return;
-    mockDb.deleteInsumo(id);
+    if (!confirm(`¿Estás seguro de que deseas eliminar el insumo "${name}"? Esta acción no se puede deshacer.`)) return;
+    
+    let sessionUser = 'Administrador';
+    try {
+      const sessionStr = localStorage.getItem('alico_session');
+      if (sessionStr) {
+        const session = JSON.parse(sessionStr);
+        sessionUser = session.nombre || 'Administrador';
+      }
+    } catch (e) {}
+
+    mockDb.deleteInsumo(id, sessionUser);
     setSuccessMsg('Insumo eliminado con éxito.');
     loadSedeData();
-    setTimeout(() => setSuccessMsg(''), 2000);
+    setTimeout(() => setSuccessMsg(''), 3000);
   };
 
   const handleCreateCategory = (e: React.FormEvent) => {
