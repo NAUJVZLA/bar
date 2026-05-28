@@ -319,10 +319,34 @@ export const syncTableToSupabase = async (table: keyof MockDataStore) => {
           return finalRest;
         }) as any;
       } else if (table === 'prestamos') {
-        payload = (data as PrestamoBotella[]).map((p: any) => {
-          const { descontó_stock, creado_en, ...rest } = p;
-          return { ...rest, desconto_stock: descontó_stock };
-        }) as any;
+        payload = (data as PrestamoBotella[]).map((p: any) => ({
+          id: p.id,
+          sede_id: p.sede_id,
+          cliente_nombre: p.cliente_nombre,
+          botella_nombre: p.botella_nombre,
+          cantidad: Number(p.cantidad) || 0,
+          estado: p.estado,
+          fecha_prestamo: p.fecha_prestamo,
+          fecha_devolucion: p.fecha_devolucion || null,
+          registrado_por: p.registrado_por,
+          desconto_stock: p.descontó_stock ?? false,
+          producto_id: p.producto_id || null,
+          notas: p.notas || null
+        })) as any;
+      } else if (table === 'creditos') {
+        payload = (data as CreditoCliente[]).map((p: any) => ({
+          id: p.id,
+          sede_id: p.sede_id,
+          cliente_nombre: p.cliente_nombre,
+          venta_id: p.venta_id || null,
+          total_deuda: Number(p.total_deuda) || 0,
+          total_pagado: Number(p.total_pagado) || 0,
+          estado: p.estado,
+          fecha_registro: p.fecha_registro,
+          fecha_pago: p.fecha_pago || null,
+          registrado_por: p.registrado_por,
+          notas: p.notas || null
+        })) as any;
       } else {
         payload = (data as any[]).map((p: any) => {
           const { creado_en, ...rest } = p;
