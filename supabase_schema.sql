@@ -191,3 +191,29 @@ ALTER PUBLICATION supabase_realtime ADD TABLE insumos;
 ALTER TABLE mesas REPLICA IDENTITY FULL;
 ALTER TABLE ventas REPLICA IDENTITY FULL;
 ALTER TABLE movimientos REPLICA IDENTITY FULL;
+
+-- ==============================================================
+-- 12. TABLA REFRIGERIOS (Consumo de Empleados)
+-- ==============================================================
+CREATE TABLE refrigerios (
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    sede_id VARCHAR(100) NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+    producto_id VARCHAR(100) NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
+    producto_nombre VARCHAR(200) NOT NULL,
+    cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+    empleado_nombre VARCHAR(150) NOT NULL,
+    fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    notas TEXT
+);
+
+-- Habilitamos RLS
+ALTER TABLE refrigerios ENABLE ROW LEVEL SECURITY;
+
+-- Permisos
+CREATE POLICY "Acceso total refrigerios" ON refrigerios FOR ALL USING (true) WITH CHECK (true);
+
+-- Agregar a Realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE refrigerios;
+
+-- Replica Identity
+ALTER TABLE refrigerios REPLICA IDENTITY FULL;

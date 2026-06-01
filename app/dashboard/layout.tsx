@@ -171,6 +171,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       )
     },
     {
+      nombre: 'Consumo Refrigerios',
+      path: '/dashboard/refrigerios',
+      icon: (
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8.25v-1.5m0 1.5c-1.355 0-2.697.056-4.024.166C6.845 8.51 6 9.473 6 10.608v2.513c0 .9.517 1.726 1.307 2.15 1.493.8 3.16 1.229 4.693 1.229s3.2-.43 4.693-1.229c.79-.424 1.307-1.25 1.307-2.15v-2.513c0-1.135-.845-2.098-1.976-2.192A48.624 48.624 0 0012 8.25zM12 2.25V5.25" />
+        </svg>
+      )
+    },
+    {
       nombre: 'Auditoría de Eventos',
       path: '/dashboard/auditoria',
       icon: (

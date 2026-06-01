@@ -163,6 +163,17 @@ export interface AuditLog {
   fecha_hora: string;
 }
 
+export interface Refrigerio {
+  id: string;
+  sede_id: string;
+  producto_id: string;
+  producto_nombre: string;
+  cantidad: number;
+  empleado_nombre: string;
+  fecha_hora: string;
+  notas?: string;
+}
+
 // ==========================================
 // MOCK STATE INITIAL DATA
 // ==========================================
@@ -311,6 +322,7 @@ export interface MockDataStore {
   prestamos: PrestamoBotella[];
   cierres: CierreCaja[];
   auditoria: AuditLog[];
+  refrigerios: Refrigerio[];
 }
 
 // ==========================================
@@ -366,6 +378,17 @@ export const syncTableToSupabase = async (table: keyof MockDataStore) => {
           detalle: a.detalle,
           fecha_hora: a.fecha_hora
         })) as any;
+      } else if (table === 'refrigerios') {
+        payload = (data as Refrigerio[]).map((r: any) => ({
+          id: r.id,
+          sede_id: r.sede_id,
+          producto_id: r.producto_id,
+          producto_nombre: r.producto_nombre,
+          cantidad: Number(r.cantidad) || 0,
+          empleado_nombre: r.empleado_nombre,
+          fecha_hora: r.fecha_hora,
+          notas: r.notas || null
+        })) as any;
       } else {
         payload = (data as any[]).map((p: any) => {
           const { creado_en, ...rest } = p;
@@ -414,7 +437,8 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       ventasRes,
       creditosRes,
       prestamosRes,
-      cierresRes
+      cierresRes,
+      refrigeriosRes
     ] = await Promise.all([
       supabase.from('sedes').select('*'),
       supabase.from('insumos').select('*'),
@@ -424,7 +448,8 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       supabase.from('ventas').select('*'),
       supabase.from('creditos').select('*'),
       supabase.from('prestamos').select('*'),
-      supabase.from('cierres').select('*')
+      supabase.from('cierres').select('*'),
+      supabase.from('refrigerios').select('*')
     ]);
 
     if (sedesRes.error) throw sedesRes.error;
@@ -436,6 +461,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     if (creditosRes.error) throw creditosRes.error;
     if (prestamosRes.error) throw prestamosRes.error;
     if (cierresRes.error) throw cierresRes.error;
+    if (refrigeriosRes.error) throw refrigeriosRes.error;
 
     // Cargar Auditoría de forma defensiva por si la tabla no existe en la BD del usuario
     let auditoriaRes: any = { data: [] };
@@ -515,6 +541,11 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       ...a
     }));
 
+    const parsedRefrigerios = (refrigeriosRes.data || []).map((r: any) => ({
+      ...r,
+      cantidad: Number(r.cantidad) || 0
+    }));
+
     // Actualizar caché local instantáneamente
     setLocalStorage('alico_sedes', sedesRes.data || []);
     setLocalStorage('alico_insumos', parsedInsumos);
@@ -526,6 +557,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     setLocalStorage('alico_prestamos', parsedPrestamos);
     setLocalStorage('alico_cierres', parsedCierres);
     setLocalStorage('alico_auditoria', parsedAuditoria);
+    setLocalStorage('alico_refrigerios', parsedRefrigerios);
 
     console.log('🟢 [Alico Sync] Base de datos local sincronizada con la nube.');
     window.dispatchEvent(new Event('supabase_synced'));
@@ -584,6 +616,7 @@ export const getMockData = (): MockDataStore => {
     prestamos: getLocalStorage<PrestamoBotella[]>('alico_prestamos', INITIAL_PRESTAMOS),
     cierres: getLocalStorage<CierreCaja[]>('alico_cierres', []),
     auditoria: getLocalStorage<AuditLog[]>('alico_auditoria', []),
+    refrigerios: getLocalStorage<Refrigerio[]>('alico_refrigerios', []),
   };
 };
 
@@ -630,6 +663,10 @@ export const saveMockData = (newData: Partial<MockDataStore>): void => {
   if (newData.auditoria) {
     setLocalStorage('alico_auditoria', newData.auditoria);
     syncQueue = syncQueue.then(() => syncTableToSupabase('auditoria')) as Promise<void>;
+  }
+  if (newData.refrigerios) {
+    setLocalStorage('alico_refrigerios', newData.refrigerios);
+    syncQueue = syncQueue.then(() => syncTableToSupabase('refrigerios')) as Promise<void>;
   }
 
   syncQueue.finally(() => {
@@ -1356,6 +1393,78 @@ export const mockDb = {
     const logs = data.auditoria || [];
     return sedeId ? logs.filter(l => l.sede_id === sedeId) : logs;
   },
+  getRefrigerios: (sedeId?: string): Refrigerio[] => {
+    const data = getMockData();
+    const refs = data.refrigerios || [];
+    return sedeId ? refs.filter(r => r.sede_id === sedeId) : refs;
+  },
+  registrarRefrigerio: (refrigerio: Omit<Refrigerio, 'id' | 'fecha_hora'>): Refrigerio => {
+    const data = getMockData();
+    
+    // 1. Descontar stock del producto
+    const prodIdx = data.productos.findIndex(p => p.id === refrigerio.producto_id);
+    if (prodIdx === -1) {
+      throw new Error('Producto no encontrado en el inventario');
+    }
+    const prod = data.productos[prodIdx];
+    if (prod.stock_actual < refrigerio.cantidad) {
+      throw new Error(`Stock insuficiente. Solo quedan ${prod.stock_actual} unidades.`);
+    }
+    prod.stock_actual -= refrigerio.cantidad;
+
+    // 2. Si el producto tiene receta (comida fabricada), descontar insumos de cocina
+    if (prod.tiene_receta && prod.receta && prod.receta.length > 0) {
+      prod.receta.forEach(item => {
+        const insIdx = data.insumos.findIndex(ins => ins.id === item.insumo_id && ins.sede_id === refrigerio.sede_id);
+        if (insIdx !== -1) {
+          const insumo = data.insumos[insIdx];
+          const totalADescontar = item.cantidad * refrigerio.cantidad;
+          insumo.stock_actual = Math.max(0, insumo.stock_actual - totalADescontar);
+        }
+      });
+    }
+
+    // 3. Registrar movimiento de EGRESO en el Kárdex
+    const newMov: Movimiento = {
+      id: 'mov-' + Date.now(),
+      producto_id: refrigerio.producto_id,
+      producto_nombre: refrigerio.producto_nombre,
+      sede_id: refrigerio.sede_id,
+      tipo: 'EGRESO',
+      cantidad: refrigerio.cantidad,
+      motivo: `Consumo Interno (Refrigerio de empleado: ${refrigerio.empleado_nombre})`,
+      registrado_por: 'Sistema (Refrigerios)',
+      fecha_hora: new Date().toISOString()
+    };
+    data.movimientos.unshift(newMov);
+
+    // 4. Registrar refrigerio en el historial
+    const newRefrigerio: Refrigerio = {
+      id: 'ref-' + Date.now(),
+      fecha_hora: new Date().toISOString(),
+      ...refrigerio
+    };
+    data.refrigerios = data.refrigerios || [];
+    data.refrigerios.unshift(newRefrigerio);
+
+    // 5. Guardar en localStorage y sincronizar con Supabase
+    saveMockData({
+      productos: data.productos,
+      insumos: data.insumos,
+      movimientos: data.movimientos,
+      refrigerios: data.refrigerios
+    });
+
+    // 6. Registrar en bitácora de auditoría
+    mockDb.registrarAuditLog(
+      refrigerio.sede_id,
+      'Sistema (Refrigerios)',
+      'REGISTRAR_REFRIGERIO',
+      `Registró refrigerio para ${refrigerio.empleado_nombre}: ${refrigerio.cantidad}x ${refrigerio.producto_nombre}.`
+    );
+
+    return newRefrigerio;
+  },
   resetDbToDemo: async (): Promise<void> => {
     setLocalStorage('alico_sedes', INITIAL_SEDES);
     setLocalStorage('alico_insumos', INITIAL_INSUMOS);
@@ -1366,10 +1475,12 @@ export const mockDb = {
     setLocalStorage('alico_creditos', INITIAL_CREDITOS);
     setLocalStorage('alico_prestamos', INITIAL_PRESTAMOS);
     setLocalStorage('alico_cierres', []);
+    setLocalStorage('alico_refrigerios', []);
     setLocalStorage('alico_categorias', ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios']);
 
     if (!isMockMode && supabase) {
       try {
+        await supabase.from('refrigerios').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('cierres').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('ventas').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('movimientos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
