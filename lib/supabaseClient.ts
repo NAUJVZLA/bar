@@ -195,11 +195,9 @@ const INITIAL_PRODUCTS: Producto[] = [
   { id: 'p9', sede_id: 'sede-norte', codigo_barras: '770123456786', nombre: 'Ron Medellin Añejo 3 Años 750ml', categoria: 'Licores', precio_compra: 38000, precio_venta: 58000, stock_actual: 15, stock_minimo: 6 },
   { id: 'p10', sede_id: 'sede-norte', codigo_barras: '770123456787', nombre: 'Gaseosa Coca-Cola 1.5L', categoria: 'Gaseosas', precio_compra: 4000, precio_venta: 7000, stock_actual: 30, stock_minimo: 10 },
   { id: 'p11', sede_id: 'sede-centro', codigo_barras: '770123456787', nombre: 'Gaseosa Coca-Cola 1.5L', categoria: 'Gaseosas', precio_compra: 4000, precio_venta: 6500, stock_actual: 14, stock_minimo: 10 },
-  // Comidas Rápidas (Productos con Receta)
   { 
     id: 'p12', sede_id: 'sede-norte', codigo_barras: 'COM-001', nombre: 'Hamburguesa Sencilla', categoria: 'Comidas', 
-    precio_compra: 0, precio_venta: 15000, stock_actual: 15, stock_minimo: 5,
-    tiene_receta: true,
+    precio_compra: 3000, precio_venta: 12000, stock_actual: 50, stock_minimo: 10, tiene_receta: true,
     receta: [
       { insumo_id: 'i1', insumo_nombre: 'Carne de res molida', cantidad: 120, unidad: 'g' },
       { insumo_id: 'i2', insumo_nombre: 'Pan de hamburguesa', cantidad: 1, unidad: 'und' },
@@ -207,47 +205,63 @@ const INITIAL_PRODUCTS: Producto[] = [
     ]
   },
   { 
-    id: 'p13', sede_id: 'sede-norte', codigo_barras: 'COM-002', nombre: 'Perro Caliente Tradicional', categoria: 'Comidas', 
-    precio_compra: 0, precio_venta: 12000, stock_actual: 20, stock_minimo: 5,
-    tiene_receta: true,
+    id: 'p13', sede_id: 'sede-norte', codigo_barras: 'COM-002', nombre: 'Perro Caliente Especial', categoria: 'Comidas', 
+    precio_compra: 2500, precio_venta: 9000, stock_actual: 40, stock_minimo: 10, tiene_receta: true,
     receta: [
       { insumo_id: 'i3', insumo_nombre: 'Pan de perro caliente', cantidad: 1, unidad: 'und' },
       { insumo_id: 'i4', insumo_nombre: 'Salchicha Americana', cantidad: 1, unidad: 'und' },
-      { insumo_id: 'i8', insumo_nombre: 'Ripio de papa', cantidad: 30, unidad: 'g' },
-      { insumo_id: 'i6', insumo_nombre: 'Queso mozzarella rallado', cantidad: 40, unidad: 'g' },
-      { insumo_id: 'i9', insumo_nombre: 'Salsas variadas', cantidad: 20, unidad: 'ml' }
+      { insumo_id: 'i8', insumo_nombre: 'Ripio de papa', cantidad: 30, unidad: 'g' }
+    ]
+  },
+  { 
+    id: 'p14', sede_id: 'sede-norte', codigo_barras: 'COM-003', nombre: 'Papas Locas (Porción)', categoria: 'Comidas', 
+    precio_compra: 2000, precio_venta: 8000, stock_actual: 30, stock_minimo: 5, tiene_receta: true,
+    receta: [
+      { insumo_id: 'i7', insumo_nombre: 'Papas a la francesa', cantidad: 250, unidad: 'g' },
+      { insumo_id: 'i4', insumo_nombre: 'Salchicha Americana', cantidad: 0.5, unidad: 'und' },
+      { insumo_id: 'i6', insumo_nombre: 'Queso mozzarella rallado', cantidad: 40, unidad: 'g' }
     ]
   }
 ];
 
 const INITIAL_MESAS: Mesa[] = [
-  { id: 'm1', sede_id: 'sede-norte', numero_mesa: 'Mesa 1', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] },
-  { id: 'm2', sede_id: 'sede-norte', numero_mesa: 'Mesa 2', estado: 'OCUPADA', cliente_nombre: 'Andrés López', consumos: [
-    { id: 'c1', producto_id: 'p1', nombre: 'Cerveza Club Colombia Dorada', cantidad: 3, precio_unitario: 6000, registrado_por: 'Diana Cajero' }
-  ] },
-  { id: 'm3', sede_id: 'sede-norte', numero_mesa: 'Mesa 3', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] },
-  { id: 'm4', sede_id: 'sede-norte', numero_mesa: 'Mesa 4', estado: 'PAGANDO', cliente_nombre: 'Familia Gómez', consumos: [
-    { id: 'c2', producto_id: 'p7', nombre: 'Aguardiente Antioqueño Azul 750ml', cantidad: 1, precio_unitario: 68000, registrado_por: 'Diana Cajero' },
-    { id: 'c3', producto_id: 'p10', nombre: 'Gaseosa Coca-Cola 1.5L', cantidad: 2, precio_unitario: 7000, registrado_por: 'Diana Cajero' }
-  ] },
-  { id: 'm5', sede_id: 'sede-norte', numero_mesa: 'Mesa 5', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] },
-  { id: 'm6', sede_id: 'sede-norte', numero_mesa: 'Barra Asientos', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] },
-  { id: 'm7', sede_id: 'sede-centro', numero_mesa: 'Mesa 1', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] },
-  { id: 'm8', sede_id: 'sede-centro', numero_mesa: 'Mesa 2', estado: 'OCUPADA', cliente_nombre: 'Carlos G.', consumos: [
-    { id: 'c4', producto_id: 'p3', nombre: 'Cerveza Corona Extra 355ml', cantidad: 4, precio_unitario: 8500, registrado_por: 'Juan Admin' }
-  ] }
+  { id: 'm1', sede_id: 'sede-norte', numero_mesa: '1', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] },
+  { id: 'm2', sede_id: 'sede-norte', numero_mesa: '2', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] },
+  { id: 'm3', sede_id: 'sede-norte', numero_mesa: '3', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] },
+  { id: 'm4', sede_id: 'sede-norte', numero_mesa: 'Barra Principal', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] },
+  { id: 'm5', sede_id: 'sede-centro', numero_mesa: 'Express 1', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] },
+  { id: 'm6', sede_id: 'sede-centro', numero_mesa: 'Express 2', estado: 'DISPONIBLE', cliente_nombre: '', consumos: [] }
 ];
 
 const INITIAL_MOVIMIENTOS: Movimiento[] = [
-  { id: 'mov1', producto_id: 'p1', producto_nombre: 'Cerveza Club Colombia Dorada', sede_id: 'sede-norte', tipo: 'INGRESO', cantidad: 48, motivo: 'Lote de compra inicial', registrado_por: 'Diana Cajero', fecha_hora: '2026-05-22T02:30:00' },
-  { id: 'mov2', producto_id: 'p5', producto_nombre: 'Whisky Johnnie Walker Black Label 700ml', sede_id: 'sede-norte', tipo: 'INGRESO', cantidad: 12, motivo: 'Reabastecimiento de bodega', registrado_por: 'Diana Cajero', fecha_hora: '2026-05-22T03:15:00' },
-  { id: 'mov3', producto_id: 'p3', producto_nombre: 'Cerveza Corona Extra 355ml', sede_id: 'sede-centro', tipo: 'EGRESO', cantidad: 12, motivo: 'Ajuste por botella rota', registrado_por: 'Juan Admin', fecha_hora: '2026-05-22T05:00:00' }
+  {
+    id: 'mov-1',
+    producto_id: 'p1',
+    producto_nombre: 'Cerveza Club Colombia Dorada',
+    sede_id: 'sede-norte',
+    tipo: 'INGRESO',
+    cantidad: 48,
+    motivo: 'Inventario inicial de apertura',
+    registrado_por: 'Diana Cajero',
+    fecha_hora: '2026-05-22T04:00:00'
+  }
 ];
 
 const INITIAL_VENTAS: Venta[] = [
-  { id: 'v1', sede_id: 'sede-norte', cliente_nombre: 'Cliente General', total: 24000, metodo_pago: 'EFECTIVO', atendido_por: 'Diana Cajero', fecha_hora: '2026-05-22T06:00:00', items: [
-    { producto_id: 'p1', nombre: 'Cerveza Club Colombia Dorada', cantidad: 4, precio_unitario: 6000 }
-  ]}
+  {
+    id: 'v1',
+    sede_id: 'sede-norte',
+    cliente_nombre: 'Carlos Restrepo',
+    total: 24000,
+    metodo_pago: 'CREDITO',
+    atendido_por: 'Diana Cajero',
+    fecha_hora: '2026-05-22T05:30:00',
+    es_directa: true,
+    estado: 'COMPLETADA',
+    items: [
+      { producto_id: 'p1', nombre: 'Cerveza Club Colombia Dorada', cantidad: 4, precio_unitario: 6000 }
+    ]
+  }
 ];
 
 const INITIAL_CREDITOS: CreditoCliente[] = [
@@ -313,6 +327,63 @@ export interface MockDataStore {
   auditoria: AuditLog[];
 }
 
+// Base de datos en memoria (RAM) para acceso síncrono ultra veloz
+export let memoryDb: MockDataStore = {
+  sedes: [],
+  insumos: [],
+  productos: [],
+  mesas: [],
+  movimientos: [],
+  ventas: [],
+  creditos: [],
+  prestamos: [],
+  cierres: [],
+  auditoria: []
+};
+
+// Categorías del sistema
+export const categories: string[] = ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios'];
+
+// Cargar estado inicial
+export const initializeDb = () => {
+  if (isMockMode) {
+    const storedMesas = getLocalStorage<Mesa[]>('alico_mesas', INITIAL_MESAS);
+    const safeMesas = storedMesas.map(m => ({
+      ...m,
+      consumos: m.consumos || []
+    }));
+    memoryDb.sedes = getLocalStorage<Sede[]>('alico_sedes', INITIAL_SEDES);
+    memoryDb.insumos = getLocalStorage<Insumo[]>('alico_insumos', INITIAL_INSUMOS);
+    memoryDb.productos = getLocalStorage<Producto[]>('alico_productos', INITIAL_PRODUCTS);
+    memoryDb.mesas = safeMesas;
+    memoryDb.movimientos = getLocalStorage<Movimiento[]>('alico_movimientos', INITIAL_MOVIMIENTOS);
+    memoryDb.ventas = getLocalStorage<Venta[]>('alico_ventas', INITIAL_VENTAS);
+    memoryDb.creditos = getLocalStorage<CreditoCliente[]>('alico_creditos', INITIAL_CREDITOS);
+    memoryDb.prestamos = getLocalStorage<PrestamoBotella[]>('alico_prestamos', INITIAL_PRESTAMOS);
+    memoryDb.cierres = getLocalStorage<CierreCaja[]>('alico_cierres', []);
+    memoryDb.auditoria = getLocalStorage<AuditLog[]>('alico_auditoria', []);
+
+    const cats = getLocalStorage<string[]>('alico_categorias', ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios']);
+    categories.splice(0, categories.length, ...cats);
+  } else {
+    // Supabase Mode: Inicializar con valores por defecto pero sin localStorage
+    memoryDb.sedes = INITIAL_SEDES;
+    memoryDb.insumos = INITIAL_INSUMOS;
+    memoryDb.productos = INITIAL_PRODUCTS;
+    memoryDb.mesas = INITIAL_MESAS.map(m => ({ ...m, consumos: m.consumos || [] }));
+    memoryDb.movimientos = INITIAL_MOVIMIENTOS;
+    memoryDb.ventas = INITIAL_VENTAS;
+    memoryDb.creditos = INITIAL_CREDITOS;
+    memoryDb.prestamos = INITIAL_PRESTAMOS;
+    memoryDb.cierres = [];
+    memoryDb.auditoria = [];
+  }
+};
+
+if (typeof window !== 'undefined') {
+  initializeDb();
+}
+
 // ==========================================
 // SUPABASE OFFLINE-FIRST SYNC ENGINE
 // ==========================================
@@ -321,7 +392,6 @@ export const syncTableToSupabase = async (table: keyof MockDataStore) => {
   try {
     let data = getMockData()[table];
     if (data.length > 0) {
-      // Sanitización para evitar que Supabase rechace el upsert por columnas inexistentes o inconsistentes (creado_en)
       let payload = data;
       if (table === 'productos') {
         payload = (data as Producto[]).map(({ registrado_por, ...rest }: any) => {
@@ -437,7 +507,6 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     if (prestamosRes.error) throw prestamosRes.error;
     if (cierresRes.error) throw cierresRes.error;
 
-    // Cargar Auditoría de forma defensiva por si la tabla no existe en la BD del usuario
     let auditoriaRes: any = { data: [] };
     try {
       const res = await supabase.from('auditoria').select('*');
@@ -446,7 +515,6 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       console.warn('⚠️ [Alico Sync] La tabla "auditoria" no está creada en Supabase. Usando almacenamiento local.');
     }
 
-    // Parsear y sanitizar tipos de datos numéricos y mapear campos de base de datos
     const parsedInsumos = (insumosRes.data || []).map((i: any) => ({
       ...i,
       stock_actual: Number(i.stock_actual) || 0,
@@ -515,21 +583,27 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       ...a
     }));
 
-    // Actualizar caché local instantáneamente
-    setLocalStorage('alico_sedes', sedesRes.data || []);
-    setLocalStorage('alico_insumos', parsedInsumos);
-    setLocalStorage('alico_productos', parsedProductos);
-    setLocalStorage('alico_mesas', parsedMesas);
-    setLocalStorage('alico_movimientos', parsedMovimientos);
-    setLocalStorage('alico_ventas', parsedVentas);
-    setLocalStorage('alico_creditos', parsedCreditos);
-    setLocalStorage('alico_prestamos', parsedPrestamos);
-    setLocalStorage('alico_cierres', parsedCierres);
-    setLocalStorage('alico_auditoria', parsedAuditoria);
+    // Actualizar caché en memoria
+    memoryDb.sedes = sedesRes.data || [];
+    memoryDb.insumos = parsedInsumos;
+    memoryDb.productos = parsedProductos;
+    memoryDb.mesas = parsedMesas;
+    memoryDb.movimientos = parsedMovimientos;
+    memoryDb.ventas = parsedVentas;
+    memoryDb.creditos = parsedCreditos;
+    memoryDb.prestamos = parsedPrestamos;
+    memoryDb.cierres = parsedCierres;
+    memoryDb.auditoria = parsedAuditoria;
+
+    // Derivar categorías de productos de forma dinámica
+    const uniqueCats = Array.from(new Set([
+      'Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios',
+      ...parsedProductos.map(p => p.categoria)
+    ]));
+    categories.splice(0, categories.length, ...uniqueCats);
 
     console.log('🟢 [Alico Sync] Base de datos local sincronizada con la nube.');
     window.dispatchEvent(new Event('supabase_synced'));
-    // Despachamos cloudSync para que las UI recarguen los datos frescos sin cerrar los modales
     window.dispatchEvent(new Event('cloudSync'));
     return true;
   } catch (err) {
@@ -542,8 +616,6 @@ let realtimeChannel: any = null;
 
 export const initRealtimeSync = () => {
   if (isMockMode || !supabase) return;
-  
-  // Evitar suscripciones duplicadas
   if (realtimeChannel) return realtimeChannel;
   
   realtimeChannel = supabase.channel('public:alico_sync');
@@ -553,8 +625,6 @@ export const initRealtimeSync = () => {
     { event: '*', schema: 'public' },
     (payload: any) => {
       console.log('🔄 [Alico Realtime] Cambio detectado en la nube:', payload);
-      // Para mantener la consistencia perfecta, descargamos el estado fresco.
-      // Así aseguramos que mesas y ventas estén 100% igual al servidor.
       syncFromSupabase();
     }
   ).subscribe((status: string) => {
@@ -567,91 +637,100 @@ export const initRealtimeSync = () => {
 };
 
 export const getMockData = (): MockDataStore => {
-  const storedMesas = getLocalStorage<Mesa[]>('alico_mesas', INITIAL_MESAS);
-  const safeMesas = storedMesas.map(m => ({
-    ...m,
-    consumos: m.consumos || []
-  }));
-
-  return {
-    sedes: getLocalStorage<Sede[]>('alico_sedes', INITIAL_SEDES),
-    insumos: getLocalStorage<Insumo[]>('alico_insumos', INITIAL_INSUMOS),
-    productos: getLocalStorage<Producto[]>('alico_productos', INITIAL_PRODUCTS),
-    mesas: safeMesas,
-    movimientos: getLocalStorage<Movimiento[]>('alico_movimientos', INITIAL_MOVIMIENTOS),
-    ventas: getLocalStorage<Venta[]>('alico_ventas', INITIAL_VENTAS),
-    creditos: getLocalStorage<CreditoCliente[]>('alico_creditos', INITIAL_CREDITOS),
-    prestamos: getLocalStorage<PrestamoBotella[]>('alico_prestamos', INITIAL_PRESTAMOS),
-    cierres: getLocalStorage<CierreCaja[]>('alico_cierres', []),
-    auditoria: getLocalStorage<AuditLog[]>('alico_auditoria', []),
-  };
+  return memoryDb;
 };
 
 export const saveMockData = (newData: Partial<MockDataStore>): void => {
-  activeSyncsCount++;
-  let syncQueue = Promise.resolve();
+  if (isMockMode) {
+    activeSyncsCount++;
+    let syncQueue = Promise.resolve();
 
-  if (newData.sedes) {
-    setLocalStorage('alico_sedes', newData.sedes);
-    syncQueue = syncQueue.then(() => syncTableToSupabase('sedes')) as Promise<void>;
-  }
-  if (newData.insumos) {
-    setLocalStorage('alico_insumos', newData.insumos);
-    syncQueue = syncQueue.then(() => syncTableToSupabase('insumos')) as Promise<void>;
-  }
-  if (newData.productos) {
-    setLocalStorage('alico_productos', newData.productos);
-    syncQueue = syncQueue.then(() => syncTableToSupabase('productos')) as Promise<void>;
-  }
-  if (newData.mesas) {
-    setLocalStorage('alico_mesas', newData.mesas);
-    syncQueue = syncQueue.then(() => syncTableToSupabase('mesas')) as Promise<void>;
-  }
-  if (newData.movimientos) {
-    setLocalStorage('alico_movimientos', newData.movimientos);
-    syncQueue = syncQueue.then(() => syncTableToSupabase('movimientos')) as Promise<void>;
-  }
-  if (newData.ventas) {
-    setLocalStorage('alico_ventas', newData.ventas);
-    syncQueue = syncQueue.then(() => syncTableToSupabase('ventas')) as Promise<void>;
-  }
-  if (newData.creditos) {
-    setLocalStorage('alico_creditos', newData.creditos);
-    syncQueue = syncQueue.then(() => syncTableToSupabase('creditos')) as Promise<void>;
-  }
-  if (newData.prestamos) {
-    setLocalStorage('alico_prestamos', newData.prestamos);
-    syncQueue = syncQueue.then(() => syncTableToSupabase('prestamos')) as Promise<void>;
-  }
-  if (newData.cierres) {
-    setLocalStorage('alico_cierres', newData.cierres);
-    syncQueue = syncQueue.then(() => syncTableToSupabase('cierres')) as Promise<void>;
-  }
-  if (newData.auditoria) {
-    setLocalStorage('alico_auditoria', newData.auditoria);
-    syncQueue = syncQueue.then(() => syncTableToSupabase('auditoria')) as Promise<void>;
-  }
+    if (newData.sedes) {
+      setLocalStorage('alico_sedes', newData.sedes);
+      memoryDb.sedes = newData.sedes;
+      syncQueue = syncQueue.then(() => syncTableToSupabase('sedes')) as Promise<void>;
+    }
+    if (newData.insumos) {
+      setLocalStorage('alico_insumos', newData.insumos);
+      memoryDb.insumos = newData.insumos;
+      syncQueue = syncQueue.then(() => syncTableToSupabase('insumos')) as Promise<void>;
+    }
+    if (newData.productos) {
+      setLocalStorage('alico_productos', newData.productos);
+      memoryDb.productos = newData.productos;
+      syncQueue = syncQueue.then(() => syncTableToSupabase('productos')) as Promise<void>;
+    }
+    if (newData.mesas) {
+      setLocalStorage('alico_mesas', newData.mesas);
+      memoryDb.mesas = newData.mesas;
+      syncQueue = syncQueue.then(() => syncTableToSupabase('mesas')) as Promise<void>;
+    }
+    if (newData.movimientos) {
+      setLocalStorage('alico_movimientos', newData.movimientos);
+      memoryDb.movimientos = newData.movimientos;
+      syncQueue = syncQueue.then(() => syncTableToSupabase('movimientos')) as Promise<void>;
+    }
+    if (newData.ventas) {
+      setLocalStorage('alico_ventas', newData.ventas);
+      memoryDb.ventas = newData.ventas;
+      syncQueue = syncQueue.then(() => syncTableToSupabase('ventas')) as Promise<void>;
+    }
+    if (newData.creditos) {
+      setLocalStorage('alico_creditos', newData.creditos);
+      memoryDb.creditos = newData.creditos;
+      syncQueue = syncQueue.then(() => syncTableToSupabase('creditos')) as Promise<void>;
+    }
+    if (newData.prestamos) {
+      setLocalStorage('alico_prestamos', newData.prestamos);
+      memoryDb.prestamos = newData.prestamos;
+      syncQueue = syncQueue.then(() => syncTableToSupabase('prestamos')) as Promise<void>;
+    }
+    if (newData.cierres) {
+      setLocalStorage('alico_cierres', newData.cierres);
+      memoryDb.cierres = newData.cierres;
+      syncQueue = syncQueue.then(() => syncTableToSupabase('cierres')) as Promise<void>;
+    }
+    if (newData.auditoria) {
+      setLocalStorage('alico_auditoria', newData.auditoria);
+      memoryDb.auditoria = newData.auditoria;
+      syncQueue = syncQueue.then(() => syncTableToSupabase('auditoria')) as Promise<void>;
+    }
 
-  syncQueue.finally(() => {
-    setTimeout(() => {
-      activeSyncsCount = Math.max(0, activeSyncsCount - 1);
-    }, 800);
-  });
+    syncQueue.finally(() => {
+      setTimeout(() => {
+        activeSyncsCount = Math.max(0, activeSyncsCount - 1);
+      }, 800);
+    });
+  }
 };
 
 // ==========================================
 // MOCK STATE ACTIONS
 // ==========================================
+const runAsyncSupabase = (fn: () => Promise<any>) => {
+  if (isMockMode || !supabase) return;
+  fn().catch(err => {
+    console.error('❌ [Alico Supabase Direct Action Error]:', err);
+  });
+};
+
 export const mockDb = {
   getSedes: (): Sede[] => {
     const sedes = getMockData().sedes;
     return sedes.filter(s => s.id !== 'sede-centro');
   },
   addSede: (sede: Omit<Sede, 'id'>): Sede => {
-    const data = getMockData();
-    const newSede: Sede = { id: 'sede-' + Date.now(), ...sede };
-    data.sedes.push(newSede);
-    saveMockData({ sedes: data.sedes });
+    const newId = 'sede-' + Date.now();
+    const newSede: Sede = { id: newId, ...sede };
+    memoryDb.sedes.push(newSede);
+    
+    if (isMockMode) {
+      saveMockData({ sedes: memoryDb.sedes });
+    } else {
+      runAsyncSupabase(async () => {
+        await supabase!.from('sedes').insert(newSede);
+      });
+    }
     return newSede;
   },
 
@@ -661,13 +740,12 @@ export const mockDb = {
     return sedeId ? insumos.filter(i => i.sede_id === sedeId) : insumos;
   },
   saveInsumo: (insumo: Partial<Insumo> & { sede_id: string; nombre: string; stock_actual: number; unidad: string }): Insumo => {
-    const data = getMockData();
     let result: Insumo;
     if (insumo.id) {
-      const idx = data.insumos.findIndex(i => i.id === insumo.id);
+      const idx = memoryDb.insumos.findIndex(i => i.id === insumo.id);
       if (idx !== -1) {
-        data.insumos[idx] = { ...data.insumos[idx], ...insumo } as Insumo;
-        result = data.insumos[idx];
+        memoryDb.insumos[idx] = { ...memoryDb.insumos[idx], ...insumo } as Insumo;
+        result = memoryDb.insumos[idx];
       } else {
         throw new Error('Insumo no encontrado');
       }
@@ -682,24 +760,36 @@ export const mockDb = {
         costo_unitario: insumo.costo_unitario || 0,
         sede_id: insumo.sede_id
       };
-      data.insumos.push(newInsumo);
+      memoryDb.insumos.push(newInsumo);
       result = newInsumo;
     }
-    saveMockData({ insumos: data.insumos });
+    
+    if (isMockMode) {
+      saveMockData({ insumos: memoryDb.insumos });
+    } else {
+      runAsyncSupabase(async () => {
+        const { creado_en, ...payload } = result as any;
+        await supabase!.from('insumos').upsert(payload);
+      });
+    }
     return result;
   },
   deleteInsumo: (id: string, usuario?: string): boolean => {
-    const data = getMockData();
-    const ins = data.insumos.find(i => i.id === id);
+    const ins = memoryDb.insumos.find(i => i.id === id);
     const insNombre = ins ? ins.nombre : id;
-    const sedeId = ins ? ins.sede_id : 'sede-norte';
+    const SedeId = ins ? ins.sede_id : 'sede-norte';
     
-    data.insumos = data.insumos.filter(i => i.id !== id);
-    saveMockData({ insumos: data.insumos });
-    deleteFromSupabase('insumos', id);
+    memoryDb.insumos = memoryDb.insumos.filter(i => i.id !== id);
+    if (isMockMode) {
+      saveMockData({ insumos: memoryDb.insumos });
+    } else {
+      runAsyncSupabase(async () => {
+        await supabase!.from('insumos').delete().eq('id', id);
+      });
+    }
     
     mockDb.registrarAuditLog(
-      sedeId,
+      SedeId,
       usuario || 'Administrador',
       'ELIMINAR_INSUMO',
       `Eliminó el insumo "${insNombre}" (ID: ${id}) del catálogo de insumos de cocina.`
@@ -713,17 +803,17 @@ export const mockDb = {
     return sedeId ? prods.filter(p => p.sede_id === sedeId) : prods;
   },
   saveProducto: (prod: Partial<Producto> & { sede_id: string; nombre: string; stock_actual: number }): Producto => {
-    const data = getMockData();
     let result: Producto;
+    let newMovement: Movimiento | null = null;
+    
     if (prod.id) {
-      const idx = data.productos.findIndex(p => p.id === prod.id);
+      const idx = memoryDb.productos.findIndex(p => p.id === prod.id);
       if (idx !== -1) {
-        const oldStock = data.productos[idx].stock_actual;
+        const oldStock = memoryDb.productos[idx].stock_actual;
         const diff = prod.stock_actual - oldStock;
-        // Registrar movimiento de inventario si cambia el stock físico disponible
         if (diff !== 0) {
           const type = diff > 0 ? 'INGRESO' : 'EGRESO';
-          data.movimientos.unshift({
+          newMovement = {
             id: 'mov-' + Date.now(),
             producto_id: prod.id,
             producto_nombre: prod.nombre,
@@ -733,10 +823,11 @@ export const mockDb = {
             motivo: 'Ajuste manual de inventario',
             registrado_por: prod.registrado_por || 'Sistema',
             fecha_hora: new Date().toISOString()
-          });
+          };
+          memoryDb.movimientos.unshift(newMovement);
         }
-        data.productos[idx] = { ...data.productos[idx], ...prod } as Producto;
-        result = data.productos[idx];
+        memoryDb.productos[idx] = { ...memoryDb.productos[idx], ...prod } as Producto;
+        result = memoryDb.productos[idx];
       } else {
         throw new Error('Producto no encontrado');
       }
@@ -755,9 +846,9 @@ export const mockDb = {
         tiene_receta: prod.tiene_receta || false,
         receta: prod.receta || []
       };
-      data.productos.push(newProd);
+      memoryDb.productos.push(newProd);
       
-      data.movimientos.unshift({
+      newMovement = {
         id: 'mov-' + Date.now(),
         producto_id: newId,
         producto_nombre: newProd.nombre,
@@ -767,24 +858,41 @@ export const mockDb = {
         motivo: 'Registro inicial de producto',
         registrado_por: prod.registrado_por || 'Sistema',
         fecha_hora: new Date().toISOString()
-      });
+      };
+      memoryDb.movimientos.unshift(newMovement);
       result = newProd;
     }
-    saveMockData({ productos: data.productos, movimientos: data.movimientos });
+    
+    if (isMockMode) {
+      saveMockData({ productos: memoryDb.productos, movimientos: memoryDb.movimientos });
+    } else {
+      runAsyncSupabase(async () => {
+        const { registrado_por, creado_en, ...prodPayload } = result as any;
+        await supabase!.from('productos').upsert(prodPayload);
+        if (newMovement) {
+          const { creado_en: movC, ...movPayload } = newMovement as any;
+          await supabase!.from('movimientos').insert(movPayload);
+        }
+      });
+    }
     return result;
   },
   deleteProducto: (id: string, usuario?: string): boolean => {
-    const data = getMockData();
-    const prod = data.productos.find(p => p.id === id);
+    const prod = memoryDb.productos.find(p => p.id === id);
     const prodNombre = prod ? prod.nombre : id;
-    const sedeId = prod ? prod.sede_id : 'sede-norte';
+    const SedeId = prod ? prod.sede_id : 'sede-norte';
     
-    data.productos = data.productos.filter(p => p.id !== id);
-    saveMockData({ productos: data.productos });
-    deleteFromSupabase('productos', id);
+    memoryDb.productos = memoryDb.productos.filter(p => p.id !== id);
+    if (isMockMode) {
+      saveMockData({ productos: memoryDb.productos });
+    } else {
+      runAsyncSupabase(async () => {
+        await supabase!.from('productos').delete().eq('id', id);
+      });
+    }
     
     mockDb.registrarAuditLog(
-      sedeId,
+      SedeId,
       usuario || 'Administrador',
       'ELIMINAR_PRODUCTO',
       `Eliminó el producto "${prodNombre}" (ID: ${id}) del catálogo de inventario.`
@@ -798,10 +906,9 @@ export const mockDb = {
     return sedeId ? mesas.filter(m => m.sede_id === sedeId) : mesas;
   },
   updateMesaEstado: (mesaId: string, estado: 'DISPONIBLE' | 'OCUPADA' | 'PAGANDO', nuevaMesa?: Partial<Mesa>): Mesa | null => {
-    const data = getMockData();
-    const idx = data.mesas.findIndex(m => m.id === mesaId);
+    const idx = memoryDb.mesas.findIndex(m => m.id === mesaId);
     if (idx !== -1) {
-      const mesa = data.mesas[idx];
+      const mesa = memoryDb.mesas[idx];
       mesa.estado = estado;
       if (estado === 'DISPONIBLE') {
         mesa.cliente_nombre = '';
@@ -810,57 +917,82 @@ export const mockDb = {
         mesa.numero_mesa = nuevaMesa.numero_mesa || mesa.numero_mesa;
         mesa.cliente_nombre = nuevaMesa.cliente_nombre || mesa.cliente_nombre;
       }
-      saveMockData({ mesas: data.mesas });
+      
+      if (isMockMode) {
+        saveMockData({ mesas: memoryDb.mesas });
+      } else {
+        runAsyncSupabase(async () => {
+          const { creado_en, ...payload } = mesa as any;
+          await supabase!.from('mesas').upsert(payload);
+        });
+      }
       return mesa;
     }
     return null;
   },
-
   liberarMesaTotalmente: (mesaId: string, atendidoPor: string): Mesa | null => {
-    const data = getMockData();
-    const idx = data.mesas.findIndex(m => m.id === mesaId);
+    const idx = memoryDb.mesas.findIndex(m => m.id === mesaId);
     if (idx !== -1) {
-      const mesa = data.mesas[idx];
+      const mesa = memoryDb.mesas[idx];
       
-      // Reintegrar stock y registrar movimientos para cada consumo activo
+      const newMovements: Movimiento[] = [];
+      
       mesa.consumos.forEach(cons => {
-        const prodIdx = data.productos.findIndex(p => p.id === cons.producto_id);
+        const prodIdx = memoryDb.productos.findIndex(p => p.id === cons.producto_id);
         if (prodIdx !== -1) {
-          const prodActual = data.productos[prodIdx];
-          
+          const prodActual = memoryDb.productos[prodIdx];
           if (prodActual.tiene_receta) {
-             // Es Comida: reintegramos insumos
-             mockDb._reintegrarInsumosReceta(data, prodActual, cons.cantidad);
+             mockDb._reintegrarInsumosReceta(memoryDb, prodActual, cons.cantidad);
+          } else {
+            prodActual.stock_actual += cons.cantidad;
           }
           
-          // Reintegramos stock normal del producto y registramos movimiento
-          prodActual.stock_actual += cons.cantidad;
-          data.movimientos.unshift({
-            id: 'mov-lib-' + Date.now() + '-' + cons.id,
+          const newMov: Movimiento = {
+            id: 'mov-' + Date.now() + '-' + cons.producto_id,
             producto_id: cons.producto_id,
             producto_nombre: cons.nombre,
             sede_id: mesa.sede_id,
             tipo: 'INGRESO',
             cantidad: cons.cantidad,
-            motivo: `Liberación de mesa ${mesa.numero_mesa} (Cancelación masiva)`,
+            motivo: `Cancelación (liberación) de consumo en Mesa ${mesa.numero_mesa}`,
             registrado_por: atendidoPor,
             fecha_hora: new Date().toISOString()
-          });
+          };
+          newMovements.push(newMov);
+          memoryDb.movimientos.unshift(newMov);
         }
       });
       
-      // Resetear mesa
       mesa.estado = 'DISPONIBLE';
       mesa.cliente_nombre = '';
       mesa.consumos = [];
       
-      saveMockData({ mesas: data.mesas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos });
+      if (isMockMode) {
+        saveMockData({ mesas: memoryDb.mesas, productos: memoryDb.productos, insumos: memoryDb.insumos, movimientos: memoryDb.movimientos });
+      } else {
+        runAsyncSupabase(async () => {
+          const { creado_en, ...payload } = mesa as any;
+          await supabase!.from('mesas').upsert(payload);
+          
+          for (const prod of memoryDb.productos) {
+            const { registrado_por, creado_en: pC, ...prodPayload } = prod as any;
+            await supabase!.from('productos').upsert(prodPayload);
+          }
+          for (const ins of memoryDb.insumos) {
+            const { creado_en: iC, ...insPayload } = ins as any;
+            await supabase!.from('insumos').upsert(insPayload);
+          }
+          for (const mov of newMovements) {
+            const { creado_en: mC, ...movPayload } = mov as any;
+            await supabase!.from('movimientos').insert(movPayload);
+          }
+        });
+      }
       return mesa;
     }
     return null;
   },
-  
-  // FUNCION AUXILIAR PARA RECETAS
+
   _descontarInsumosReceta: (data: MockDataStore, producto: Producto, cantidad: number) => {
     if (producto.tiene_receta && producto.receta && producto.receta.length > 0) {
       producto.receta.forEach(itemReceta => {
@@ -875,7 +1007,6 @@ export const mockDb = {
       });
     }
   },
-
   _reintegrarInsumosReceta: (data: MockDataStore, producto: Producto, cantidad: number) => {
     if (producto.tiene_receta && producto.receta && producto.receta.length > 0) {
       producto.receta.forEach(itemReceta => {
@@ -889,24 +1020,25 @@ export const mockDb = {
   },
 
   agregarConsumoMesa: (mesaId: string, consumo: Omit<ConsumoItem, 'id'>): Mesa | null => {
-    const data = getMockData();
-    const mesaIdx = data.mesas.findIndex(m => m.id === mesaId);
+    const mesaIdx = memoryDb.mesas.findIndex(m => m.id === mesaId);
     if (mesaIdx !== -1) {
-      const mesa = data.mesas[mesaIdx];
-      const prodIdx = data.productos.findIndex(p => p.id === consumo.producto_id);
+      const mesa = memoryDb.mesas[mesaIdx];
+      const prodIdx = memoryDb.productos.findIndex(p => p.id === consumo.producto_id);
+      let newMovement: Movimiento | null = null;
+      
       if (prodIdx !== -1) {
-        const prodActual = data.productos[prodIdx];
+        const prodActual = memoryDb.productos[prodIdx];
         
         if (prodActual.stock_actual < consumo.cantidad) {
           throw new Error(`Stock insuficiente de ${prodActual.nombre}. Solo quedan ${prodActual.stock_actual} unidades.`);
         }
 
         if (prodActual.tiene_receta) {
-          mockDb._descontarInsumosReceta(data, prodActual, consumo.cantidad);
+          mockDb._descontarInsumosReceta(memoryDb, prodActual, consumo.cantidad);
         }
 
         prodActual.stock_actual -= consumo.cantidad;
-        data.movimientos.unshift({
+        newMovement = {
           id: 'mov-' + Date.now(),
           producto_id: prodActual.id,
           producto_nombre: prodActual.nombre,
@@ -916,7 +1048,8 @@ export const mockDb = {
           motivo: `Consumo en ${mesa.numero_mesa}`,
           registrado_por: consumo.registrado_por,
           fecha_hora: new Date().toISOString()
-        });
+        };
+        memoryDb.movimientos.unshift(newMovement);
       }
 
       const consumoExistente = mesa.consumos.find(c => c.producto_id === consumo.producto_id);
@@ -935,33 +1068,59 @@ export const mockDb = {
         });
       }
       mesa.estado = 'OCUPADA';
-      saveMockData({ mesas: data.mesas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos });
+      
+      if (isMockMode) {
+        saveMockData({ mesas: memoryDb.mesas, productos: memoryDb.productos, movimientos: memoryDb.movimientos, insumos: memoryDb.insumos });
+      } else {
+        runAsyncSupabase(async () => {
+          const { creado_en, ...payload } = mesa as any;
+          await supabase!.from('mesas').upsert(payload);
+          
+          if (prodIdx !== -1) {
+            const prodActual = memoryDb.productos[prodIdx];
+            const { registrado_por, creado_en: pC, ...prodPayload } = prodActual as any;
+            await supabase!.from('productos').upsert(prodPayload);
+            
+            if (prodActual.tiene_receta && prodActual.receta) {
+              for (const itemRec of prodActual.receta) {
+                const ins = memoryDb.insumos.find(i => i.id === itemRec.insumo_id);
+                if (ins) {
+                  const { creado_en: iC, ...insPayload } = ins as any;
+                  await supabase!.from('insumos').upsert(insPayload);
+                }
+              }
+            }
+          }
+          if (newMovement) {
+            const { creado_en: mC, ...movPayload } = newMovement as any;
+            await supabase!.from('movimientos').insert(movPayload);
+          }
+        });
+      }
       return mesa;
     }
     return null;
   },
 
   cancelarConsumoMesa: (mesaId: string, consumoId: string, atendidoPor: string): Mesa | null => {
-    const data = getMockData();
-    const mesaIdx = data.mesas.findIndex(m => m.id === mesaId);
+    const mesaIdx = memoryDb.mesas.findIndex(m => m.id === mesaId);
     if (mesaIdx !== -1) {
-      const mesa = data.mesas[mesaIdx];
+      const mesa = memoryDb.mesas[mesaIdx];
       const consIdx = mesa.consumos.findIndex(c => c.id === consumoId);
       if (consIdx !== -1) {
         const cons = mesa.consumos[consIdx];
+        let newMovement: Movimiento | null = null;
         
-        const prodIdx = data.productos.findIndex(p => p.id === cons.producto_id);
+        const prodIdx = memoryDb.productos.findIndex(p => p.id === cons.producto_id);
         if (prodIdx !== -1) {
-          const prodActual = data.productos[prodIdx];
+          const prodActual = memoryDb.productos[prodIdx];
           
           if (prodActual.tiene_receta) {
-             // Es Comida: reintegramos insumos
-             mockDb._reintegrarInsumosReceta(data, prodActual, cons.cantidad);
+             mockDb._reintegrarInsumosReceta(memoryDb, prodActual, cons.cantidad);
           }
           
-          // Reintegramos stock normal del producto
           prodActual.stock_actual += cons.cantidad;
-          data.movimientos.unshift({
+          newMovement = {
             id: 'mov-' + Date.now(),
             producto_id: cons.producto_id,
             producto_nombre: cons.nombre,
@@ -971,7 +1130,8 @@ export const mockDb = {
             motivo: `Cancelación/Reintegro de consumo de ${mesa.numero_mesa}`,
             registrado_por: atendidoPor,
             fecha_hora: new Date().toISOString()
-          });
+          };
+          memoryDb.movimientos.unshift(newMovement);
         }
 
         mesa.consumos.splice(consIdx, 1);
@@ -979,11 +1139,70 @@ export const mockDb = {
           mesa.estado = 'DISPONIBLE';
           mesa.cliente_nombre = '';
         }
-        saveMockData({ mesas: data.mesas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos });
+        
+        if (isMockMode) {
+          saveMockData({ mesas: memoryDb.mesas, productos: memoryDb.productos, movimientos: memoryDb.movimientos, insumos: memoryDb.insumos });
+        } else {
+          runAsyncSupabase(async () => {
+            const { creado_en, ...payload } = mesa as any;
+            await supabase!.from('mesas').upsert(payload);
+            
+            if (prodIdx !== -1) {
+              const prodActual = memoryDb.productos[prodIdx];
+              const { registrado_por, creado_en: pC, ...prodPayload } = prodActual as any;
+              await supabase!.from('productos').upsert(prodPayload);
+              
+              if (prodActual.tiene_receta && prodActual.receta) {
+                for (const itemRec of prodActual.receta) {
+                  const ins = memoryDb.insumos.find(i => i.id === itemRec.insumo_id);
+                  if (ins) {
+                    const { creado_en: iC, ...insPayload } = ins as any;
+                    await supabase!.from('insumos').upsert(insPayload);
+                  }
+                }
+              }
+            }
+            if (newMovement) {
+              const { creado_en: mC, ...movPayload } = newMovement as any;
+              await supabase!.from('movimientos').insert(movPayload);
+            }
+          });
+        }
         return mesa;
       }
     }
     return null;
+  },
+
+  // --- MOVIMIENTOS ---
+  getMovimientos: (sedeId?: string): Movimiento[] => {
+    const movs = getMockData().movimientos;
+    return sedeId ? movs.filter(m => m.sede_id === sedeId) : movs;
+  },
+
+  // --- CATEGORIAS ---
+  getCategorias: (): string[] => {
+    return categories;
+  },
+  addCategoria: (categoria: string): string[] => {
+    const cleanCat = categoria.trim();
+    if (cleanCat && !categories.some(c => c.toLowerCase() === cleanCat.toLowerCase())) {
+      categories.push(cleanCat);
+      if (isMockMode) {
+        setLocalStorage('alico_categorias', categories);
+      }
+    }
+    return categories;
+  },
+  deleteCategoria: (categoria: string): string[] => {
+    const idx = categories.indexOf(categoria);
+    if (idx !== -1) {
+      categories.splice(idx, 1);
+      if (isMockMode) {
+        setLocalStorage('alico_categorias', categories);
+      }
+    }
+    return categories;
   },
 
   // --- VENTAS ---
@@ -992,29 +1211,40 @@ export const mockDb = {
     return sedeId ? ventas.filter(v => v.sede_id === sedeId) : ventas;
   },
   registrarVenta: (venta: Omit<Venta, 'id' | 'fecha_hora'> & { es_directa?: boolean }): Venta => {
-    const data = getMockData();
     const newVenta: Venta = {
       id: 'v-' + Date.now(),
       fecha_hora: new Date().toISOString(),
+      estado: 'COMPLETADA',
       ...venta
     };
 
+    const updatedProds: Producto[] = [];
+    const updatedInsumos: Insumo[] = [];
+    const newMovs: Movimiento[] = [];
+    let newCredito: CreditoCliente | null = null;
+
     if (venta.es_directa) {
       newVenta.items.forEach(item => {
-        const prodIdx = data.productos.findIndex(p => p.id === item.producto_id);
+        const prodIdx = memoryDb.productos.findIndex(p => p.id === item.producto_id);
         if (prodIdx !== -1) {
-          const prodActual = data.productos[prodIdx];
+          const prodActual = memoryDb.productos[prodIdx];
           
           if (prodActual.stock_actual < item.cantidad) {
             throw new Error(`Stock insuficiente para ${item.nombre}.`);
           }
 
           if (prodActual.tiene_receta) {
-             mockDb._descontarInsumosReceta(data, prodActual, item.cantidad);
+             mockDb._descontarInsumosReceta(memoryDb, prodActual, item.cantidad);
+             prodActual.receta?.forEach(rItem => {
+               const ins = memoryDb.insumos.find(i => i.id === rItem.insumo_id);
+               if (ins && !updatedInsumos.includes(ins)) updatedInsumos.push(ins);
+             });
           }
 
           prodActual.stock_actual -= item.cantidad;
-          data.movimientos.unshift({
+          updatedProds.push(prodActual);
+          
+          const newMov: Movimiento = {
             id: 'mov-' + Date.now() + '-' + item.producto_id,
             producto_id: item.producto_id,
             producto_nombre: item.nombre,
@@ -1024,7 +1254,9 @@ export const mockDb = {
             motivo: 'Venta Directa POS',
             registrado_por: venta.atendido_por,
             fecha_hora: new Date().toISOString()
-          });
+          };
+          newMovs.push(newMov);
+          memoryDb.movimientos.unshift(newMov);
         }
       });
     }
@@ -1033,7 +1265,7 @@ export const mockDb = {
       if (!venta.cliente_nombre || venta.cliente_nombre.trim() === 'Cliente General') {
         throw new Error('Debe especificar el nombre real del cliente para registrar una venta a crédito.');
       }
-      const newCredito: CreditoCliente = {
+      newCredito = {
         id: 'cr-' + Date.now(),
         sede_id: venta.sede_id,
         cliente_nombre: venta.cliente_nombre,
@@ -1045,31 +1277,74 @@ export const mockDb = {
         registrado_por: venta.atendido_por,
         notas: `Crédito automático generado por venta #${newVenta.id}`
       };
-      data.creditos.unshift(newCredito);
+      memoryDb.creditos.unshift(newCredito);
     }
 
-    data.ventas.unshift(newVenta);
-    saveMockData({ ventas: data.ventas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos, creditos: data.creditos });
+    memoryDb.ventas.unshift(newVenta);
+    
+    if (isMockMode) {
+      saveMockData({ 
+        ventas: memoryDb.ventas, 
+        productos: memoryDb.productos, 
+        movimientos: memoryDb.movimientos, 
+        insumos: memoryDb.insumos, 
+        creditos: memoryDb.creditos 
+      });
+    } else {
+      runAsyncSupabase(async () => {
+        const { creado_en, ...ventaPayload } = newVenta as any;
+        await supabase!.from('ventas').insert(ventaPayload);
+
+        for (const prod of updatedProds) {
+          const { registrado_por, creado_en: pC, ...prodPayload } = prod as any;
+          await supabase!.from('productos').upsert(prodPayload);
+        }
+
+        for (const ins of updatedInsumos) {
+          const { creado_en: iC, ...insPayload } = ins as any;
+          await supabase!.from('insumos').upsert(insPayload);
+        }
+
+        for (const mov of newMovs) {
+          const { creado_en: mC, ...movPayload } = mov as any;
+          await supabase!.from('movimientos').insert(movPayload);
+        }
+
+        if (newCredito) {
+          const { creado_en: crC, ...credPayload } = newCredito as any;
+          await supabase!.from('creditos').insert(credPayload);
+        }
+      });
+    }
     return newVenta;
   },
   anularVenta: (ventaId: string, razonAnulacion: string, atendidoPor: string, usuario?: string): Venta | null => {
-    const data = getMockData();
-    const vIdx = data.ventas.findIndex(v => v.id === ventaId);
+    const vIdx = memoryDb.ventas.findIndex(v => v.id === ventaId);
     if (vIdx !== -1) {
-      const venta = data.ventas[vIdx];
+      const venta = memoryDb.ventas[vIdx];
       if (venta.estado === 'ANULADA') return null;
+
+      const updatedProds: Producto[] = [];
+      const updatedInsumos: Insumo[] = [];
+      const newMovs: Movimiento[] = [];
 
       // Reintegrar inventario
       venta.items.forEach(item => {
-        const prodIdx = data.productos.findIndex(p => p.id === item.producto_id);
+        const prodIdx = memoryDb.productos.findIndex(p => p.id === item.producto_id);
         if (prodIdx !== -1) {
-          const prodActual = data.productos[prodIdx];
+          const prodActual = memoryDb.productos[prodIdx];
           if (prodActual.tiene_receta) {
-             mockDb._reintegrarInsumosReceta(data, prodActual, item.cantidad);
+             mockDb._reintegrarInsumosReceta(memoryDb, prodActual, item.cantidad);
+             prodActual.receta?.forEach(rItem => {
+               const ins = memoryDb.insumos.find(i => i.id === rItem.insumo_id);
+               if (ins && !updatedInsumos.includes(ins)) updatedInsumos.push(ins);
+             });
           }
           
           prodActual.stock_actual += item.cantidad;
-          data.movimientos.unshift({
+          updatedProds.push(prodActual);
+
+          const newMov: Movimiento = {
             id: 'mov-anu-' + Date.now() + '-' + item.producto_id,
             producto_id: prodActual.id,
             producto_nombre: prodActual.nombre,
@@ -1079,16 +1354,46 @@ export const mockDb = {
             motivo: `Anulación de Venta: ${razonAnulacion}`,
             registrado_por: atendidoPor,
             fecha_hora: new Date().toISOString()
-          });
+          };
+          newMovs.push(newMov);
+          memoryDb.movimientos.unshift(newMov);
         }
       });
 
       venta.estado = 'ANULADA';
       venta.razon_anulacion = razonAnulacion;
       
-      saveMockData({ ventas: data.ventas, productos: data.productos, movimientos: data.movimientos, insumos: data.insumos });
+      if (isMockMode) {
+        saveMockData({ 
+          ventas: memoryDb.ventas, 
+          productos: memoryDb.productos, 
+          movimientos: memoryDb.movimientos, 
+          insumos: memoryDb.insumos 
+        });
+      } else {
+        runAsyncSupabase(async () => {
+          await supabase!.from('ventas').update({
+            estado: 'ANULADA',
+            razon_anulacion: razonAnulacion
+          }).eq('id', ventaId);
+
+          for (const prod of updatedProds) {
+            const { registrado_por, creado_en: pC, ...prodPayload } = prod as any;
+            await supabase!.from('productos').upsert(prodPayload);
+          }
+
+          for (const ins of updatedInsumos) {
+            const { creado_en: iC, ...insPayload } = ins as any;
+            await supabase!.from('insumos').upsert(insPayload);
+          }
+
+          for (const mov of newMovs) {
+            const { creado_en: mC, ...movPayload } = mov as any;
+            await supabase!.from('movimientos').insert(movPayload);
+          }
+        });
+      }
       
-      // Registrar en Auditoría
       mockDb.registrarAuditLog(
         venta.sede_id,
         usuario || atendidoPor || 'Administrador',
@@ -1100,36 +1405,13 @@ export const mockDb = {
     }
     return null;
   },
-  
-  getMovimientos: (sedeId?: string): Movimiento[] => {
-    const movs = getMockData().movimientos;
-    return sedeId ? movs.filter(m => m.sede_id === sedeId) : movs;
-  },
-  getCategorias: (): string[] => {
-    const defaultCats = ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios'];
-    return getLocalStorage<string[]>('alico_categorias', defaultCats);
-  },
-  addCategoria: (categoria: string): string[] => {
-    const cats = mockDb.getCategorias();
-    const cleanCat = categoria.trim();
-    if (cleanCat && !cats.some(c => c.toLowerCase() === cleanCat.toLowerCase())) {
-      cats.push(cleanCat);
-      setLocalStorage('alico_categorias', cats);
-    }
-    return cats;
-  },
-  deleteCategoria: (categoria: string): string[] => {
-    const cats = mockDb.getCategorias();
-    const updated = cats.filter(c => c !== categoria);
-    setLocalStorage('alico_categorias', updated);
-    return updated;
-  },
+
+  // --- CREDITOS ---
   getCreditos: (sedeId?: string): CreditoCliente[] => {
     const creditos = getMockData().creditos;
     return sedeId ? creditos.filter(c => c.sede_id === sedeId) : creditos;
   },
   registrarCreditoManual: (credito: Omit<CreditoCliente, 'id' | 'fecha_registro' | 'estado' | 'total_pagado'>): CreditoCliente => {
-    const data = getMockData();
     const newCredito: CreditoCliente = {
       id: 'cr-' + Date.now(),
       fecha_registro: new Date().toISOString(),
@@ -1137,32 +1419,51 @@ export const mockDb = {
       estado: 'PENDIENTE',
       ...credito
     };
-    data.creditos.unshift(newCredito);
-    saveMockData({ creditos: data.creditos });
+    memoryDb.creditos.unshift(newCredito);
+    
+    if (isMockMode) {
+      saveMockData({ creditos: memoryDb.creditos });
+    } else {
+      runAsyncSupabase(async () => {
+        const { creado_en, ...payload } = newCredito as any;
+        await supabase!.from('creditos').insert(payload);
+      });
+    }
     return newCredito;
   },
   registrarAbonoCredito: (creditoId: string, montoAbono: number): CreditoCliente | null => {
-    const data = getMockData();
-    const idx = data.creditos.findIndex(c => c.id === creditoId);
+    const idx = memoryDb.creditos.findIndex(c => c.id === creditoId);
     if (idx !== -1) {
-      const cred = data.creditos[idx];
+      const cred = memoryDb.creditos[idx];
       const nuevoTotalPagado = cred.total_pagado + montoAbono;
       cred.total_pagado = Math.min(cred.total_deuda, nuevoTotalPagado);
       if (cred.total_pagado >= cred.total_deuda) {
         cred.estado = 'PAGADO';
         cred.fecha_pago = new Date().toISOString();
       }
-      saveMockData({ creditos: data.creditos });
+      
+      if (isMockMode) {
+        saveMockData({ creditos: memoryDb.creditos });
+      } else {
+        runAsyncSupabase(async () => {
+          await supabase!.from('creditos').update({
+            total_pagado: cred.total_pagado,
+            estado: cred.estado,
+            fecha_pago: cred.fecha_pago || null
+          }).eq('id', creditoId);
+        });
+      }
       return cred;
     }
     return null;
   },
+
+  // --- PRESTAMOS ---
   getPrestamos: (sedeId?: string): PrestamoBotella[] => {
     const prestamos = getMockData().prestamos;
     return sedeId ? prestamos.filter(p => p.sede_id === sedeId) : prestamos;
   },
   registrarPrestamo: (prestamo: Omit<PrestamoBotella, 'id' | 'fecha_prestamo' | 'estado'> & { descontarStock?: boolean }): PrestamoBotella => {
-    const data = getMockData();
     const newId = 'pr-' + Date.now();
     const newPrestamo: PrestamoBotella = {
       id: newId,
@@ -1170,15 +1471,20 @@ export const mockDb = {
       estado: 'PENDIENTE',
       ...prestamo
     };
+    
+    let prodActual: Producto | null = null;
+    let newMovement: Movimiento | null = null;
 
     if (prestamo.descontarStock && prestamo.producto_id) {
-      const prodIdx = data.productos.findIndex(p => p.id === prestamo.producto_id);
+      const prodIdx = memoryDb.productos.findIndex(p => p.id === prestamo.producto_id);
       if (prodIdx !== -1) {
-        if (data.productos[prodIdx].stock_actual < prestamo.cantidad) {
-          throw new Error(`Stock insuficiente para prestar ${prestamo.botella_nombre}. Solo quedan ${data.productos[prodIdx].stock_actual} unidades.`);
+        prodActual = memoryDb.productos[prodIdx];
+        if (prodActual.stock_actual < prestamo.cantidad) {
+          throw new Error(`Stock insuficiente para prestar ${prestamo.botella_nombre}. Solo quedan ${prodActual.stock_actual} unidades.`);
         }
-        data.productos[prodIdx].stock_actual -= prestamo.cantidad;
-        data.movimientos.unshift({
+        prodActual.stock_actual -= prestamo.cantidad;
+        
+        newMovement = {
           id: 'mov-' + Date.now() + '-' + prestamo.producto_id,
           producto_id: prestamo.producto_id,
           producto_nombre: prestamo.botella_nombre,
@@ -1188,27 +1494,53 @@ export const mockDb = {
           motivo: `Préstamo de botellas a ${prestamo.cliente_nombre}`,
           registrado_por: prestamo.registrado_por,
           fecha_hora: new Date().toISOString()
-        });
+        };
+        memoryDb.movimientos.unshift(newMovement);
       }
     }
 
-    data.prestamos.unshift(newPrestamo);
-    saveMockData({ prestamos: data.prestamos, productos: data.productos, movimientos: data.movimientos });
+    memoryDb.prestamos.unshift(newPrestamo);
+    
+    if (isMockMode) {
+      saveMockData({ prestamos: memoryDb.prestamos, productos: memoryDb.productos, movimientos: memoryDb.movimientos });
+    } else {
+      runAsyncSupabase(async () => {
+        const { descontó_stock, creado_en, ...payload } = newPrestamo as any;
+        await supabase!.from('prestamos').insert({
+          ...payload,
+          desconto_stock: descontó_stock ?? false
+        });
+        
+        if (prodActual) {
+          const { registrado_por, creado_en: prodC, ...prodPayload } = prodActual as any;
+          await supabase!.from('productos').upsert(prodPayload);
+        }
+        
+        if (newMovement) {
+          const { creado_en: movC, ...movPayload } = newMovement as any;
+          await supabase!.from('movimientos').insert(movPayload);
+        }
+      });
+    }
     return newPrestamo;
   },
   devolverPrestamo: (prestamoId: string, reintegrarStock?: boolean): PrestamoBotella | null => {
-    const data = getMockData();
-    const idx = data.prestamos.findIndex(p => p.id === prestamoId);
+    const idx = memoryDb.prestamos.findIndex(p => p.id === prestamoId);
     if (idx !== -1) {
-      const prestamo = data.prestamos[idx];
+      const prestamo = memoryDb.prestamos[idx];
       prestamo.estado = 'DEVUELTO';
       prestamo.fecha_devolucion = new Date().toISOString();
+      
+      let prodActual: Producto | null = null;
+      let newMovement: Movimiento | null = null;
 
       if (reintegrarStock && prestamo.producto_id) {
-        const prodIdx = data.productos.findIndex(p => p.id === prestamo.producto_id);
+        const prodIdx = memoryDb.productos.findIndex(p => p.id === prestamo.producto_id);
         if (prodIdx !== -1) {
-          data.productos[prodIdx].stock_actual += prestamo.cantidad;
-          data.movimientos.unshift({
+          prodActual = memoryDb.productos[prodIdx];
+          prodActual.stock_actual += prestamo.cantidad;
+          
+          newMovement = {
             id: 'mov-' + Date.now() + '-' + prestamo.producto_id,
             producto_id: prestamo.producto_id,
             producto_nombre: prestamo.botella_nombre,
@@ -1218,24 +1550,50 @@ export const mockDb = {
             motivo: `Devolución de botellas prestadas por ${prestamo.cliente_nombre}`,
             registrado_por: prestamo.registrado_por || 'Sistema',
             fecha_hora: new Date().toISOString()
-          });
+          };
+          memoryDb.movimientos.unshift(newMovement);
         }
       }
 
-      saveMockData({ prestamos: data.prestamos, productos: data.productos, movimientos: data.movimientos });
+      if (isMockMode) {
+        saveMockData({ prestamos: memoryDb.prestamos, productos: memoryDb.productos, movimientos: memoryDb.movimientos });
+      } else {
+        runAsyncSupabase(async () => {
+          await supabase!.from('prestamos').update({
+            estado: 'DEVUELTO',
+            fecha_devolucion: prestamo.fecha_devolucion
+          }).eq('id', prestamoId);
+          
+          if (prodActual) {
+            const { registrado_por, creado_en: prodC, ...prodPayload } = prodActual as any;
+            await supabase!.from('productos').upsert(prodPayload);
+          }
+          
+          if (newMovement) {
+            const { creado_en: movC, ...movPayload } = newMovement as any;
+            await supabase!.from('movimientos').insert(movPayload);
+          }
+        });
+      }
       return prestamo;
     }
     return null;
   },
   eliminarPrestamo: (prestamoId: string, usuario?: string): boolean => {
-    const data = getMockData();
-    const pr = data.prestamos.find(p => p.id === prestamoId);
+    const pr = memoryDb.prestamos.find(p => p.id === prestamoId);
     const detalle = pr ? `Préstamo de ${pr.cantidad} botellas de ${pr.botella_nombre} al cliente ${pr.cliente_nombre}.` : prestamoId;
     const SedeId = pr ? pr.sede_id : 'sede-norte';
     
-    data.prestamos = data.prestamos.filter(p => p.id !== prestamoId);
-    saveMockData({ prestamos: data.prestamos });
-    deleteFromSupabase('prestamos', prestamoId);
+    memoryDb.prestamos = memoryDb.prestamos.filter(p => p.id !== prestamoId);
+    
+    if (isMockMode) {
+      saveMockData({ prestamos: memoryDb.prestamos });
+      deleteFromSupabase('prestamos', prestamoId);
+    } else {
+      runAsyncSupabase(async () => {
+        await supabase!.from('prestamos').delete().eq('id', prestamoId);
+      });
+    }
     
     mockDb.registrarAuditLog(
       SedeId,
@@ -1246,34 +1604,19 @@ export const mockDb = {
     return true;
   },
   limpiarPrestamosDevueltos: (sedeId: string, usuario?: string): boolean => {
-    const data = getMockData();
-    const devueltosSede = data.prestamos.filter(p => p.sede_id === sedeId && p.estado === 'DEVUELTO');
+    const devueltosSede = memoryDb.prestamos.filter(p => p.sede_id === sedeId && p.estado === 'DEVUELTO');
     if (devueltosSede.length === 0) return false;
     
     const cantidad = devueltosSede.reduce((sum, p) => sum + p.cantidad, 0);
-    data.prestamos = data.prestamos.filter(p => !(p.sede_id === sedeId && p.estado === 'DEVUELTO'));
+    memoryDb.prestamos = memoryDb.prestamos.filter(p => !(p.sede_id === sedeId && p.estado === 'DEVUELTO'));
     
-    activeSyncsCount++;
-    saveMockData({ prestamos: data.prestamos });
-    
-    if (!isMockMode && supabase) {
-      (async () => {
-        try {
-          const { error } = await supabase.from('prestamos').delete().eq('sede_id', sedeId).eq('estado', 'DEVUELTO');
-          if (error) console.error('Error al limpiar préstamos en Supabase:', error);
-        } catch (err) {
-          console.error('Fallo al limpiar préstamos:', err);
-        } finally {
-          setTimeout(() => {
-            activeSyncsCount = Math.max(0, activeSyncsCount - 1);
-          }, 800);
-        }
-      })();
-    } else {
-      setTimeout(() => {
-        activeSyncsCount = Math.max(0, activeSyncsCount - 1);
-      }, 800);
+    if (isMockMode) {
+      saveMockData({ prestamos: memoryDb.prestamos });
     }
+    
+    runAsyncSupabase(async () => {
+      await supabase!.from('prestamos').delete().eq('sede_id', sedeId).eq('estado', 'DEVUELTO');
+    });
     
     mockDb.registrarAuditLog(
       sedeId,
@@ -1284,34 +1627,19 @@ export const mockDb = {
     return true;
   },
   limpiarCreditosPagados: (sedeId: string, usuario?: string): boolean => {
-    const data = getMockData();
-    const pagadosSede = data.creditos.filter(c => c.sede_id === sedeId && c.estado === 'PAGADO');
+    const pagadosSede = memoryDb.creditos.filter(c => c.sede_id === sedeId && c.estado === 'PAGADO');
     if (pagadosSede.length === 0) return false;
     
     const montoTotal = pagadosSede.reduce((sum, c) => sum + c.total_deuda, 0);
-    data.creditos = data.creditos.filter(c => !(c.sede_id === sedeId && c.estado === 'PAGADO'));
+    memoryDb.creditos = memoryDb.creditos.filter(c => !(c.sede_id === sedeId && c.estado === 'PAGADO'));
     
-    activeSyncsCount++;
-    saveMockData({ creditos: data.creditos });
-    
-    if (!isMockMode && supabase) {
-      (async () => {
-        try {
-          const { error } = await supabase.from('creditos').delete().eq('sede_id', sedeId).eq('estado', 'PAGADO');
-          if (error) console.error('Error al limpiar créditos en Supabase:', error);
-        } catch (err) {
-          console.error('Fallo al limpiar créditos:', err);
-        } finally {
-          setTimeout(() => {
-            activeSyncsCount = Math.max(0, activeSyncsCount - 1);
-          }, 800);
-        }
-      })();
-    } else {
-      setTimeout(() => {
-        activeSyncsCount = Math.max(0, activeSyncsCount - 1);
-      }, 800);
+    if (isMockMode) {
+      saveMockData({ creditos: memoryDb.creditos });
     }
+    
+    runAsyncSupabase(async () => {
+      await supabase!.from('creditos').delete().eq('sede_id', sedeId).eq('estado', 'PAGADO');
+    });
     
     mockDb.registrarAuditLog(
       sedeId,
@@ -1321,23 +1649,33 @@ export const mockDb = {
     );
     return true;
   },
+
+  // --- CIERRES DE CAJA ---
   getCierres: (sedeId?: string): CierreCaja[] => {
     const cierres = getMockData().cierres;
     return /^\s*$/.test(sedeId || '') ? cierres : cierres.filter(c => c.sede_id === sedeId);
   },
   registrarCierre: (cierre: Omit<CierreCaja, 'id' | 'fecha_hora'>): CierreCaja => {
-    const data = getMockData();
     const newCierre: CierreCaja = {
       id: 'cierre-' + Date.now(),
       fecha_hora: new Date().toISOString(),
       ...cierre
     };
-    data.cierres.unshift(newCierre);
-    saveMockData({ cierres: data.cierres });
+    memoryDb.cierres.unshift(newCierre);
+    
+    if (isMockMode) {
+      saveMockData({ cierres: memoryDb.cierres });
+    } else {
+      runAsyncSupabase(async () => {
+        const { creado_en, ...payload } = newCierre as any;
+        await supabase!.from('cierres').insert(payload);
+      });
+    }
     return newCierre;
   },
+
+  // --- AUDITORIA ---
   registrarAuditLog: (sedeId: string, usuario: string, accion: string, detalle: string): AuditLog => {
-    const data = getMockData();
     const newLog: AuditLog = {
       id: 'aud-' + Date.now(),
       sede_id: sedeId,
@@ -1346,16 +1684,31 @@ export const mockDb = {
       detalle: detalle,
       fecha_hora: new Date().toISOString()
     };
-    data.auditoria = data.auditoria || [];
-    data.auditoria.unshift(newLog);
-    saveMockData({ auditoria: data.auditoria });
+    memoryDb.auditoria = memoryDb.auditoria || [];
+    memoryDb.auditoria.unshift(newLog);
+    
+    if (isMockMode) {
+      saveMockData({ auditoria: memoryDb.auditoria });
+    } else {
+      (async () => {
+        try {
+          if (supabase) {
+            const { creado_en, ...payload } = newLog as any;
+            await supabase.from('auditoria').insert(payload);
+          }
+        } catch (e) {
+          console.warn('⚠️ [Alico Supabase] La tabla auditoria no existe. Registrado en memoria.');
+        }
+      })();
+    }
     return newLog;
   },
   getAuditLogs: (sedeId?: string): AuditLog[] => {
-    const data = getMockData();
-    const logs = data.auditoria || [];
+    const logs = memoryDb.auditoria || [];
     return sedeId ? logs.filter(l => l.sede_id === sedeId) : logs;
   },
+
+  // --- RESET/CLEAN DATA ---
   resetDbToDemo: async (): Promise<void> => {
     setLocalStorage('alico_sedes', INITIAL_SEDES);
     setLocalStorage('alico_insumos', INITIAL_INSUMOS);
@@ -1368,6 +1721,20 @@ export const mockDb = {
     setLocalStorage('alico_cierres', []);
     setLocalStorage('alico_categorias', ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios']);
 
+    memoryDb = {
+      sedes: INITIAL_SEDES,
+      insumos: INITIAL_INSUMOS,
+      productos: INITIAL_PRODUCTS,
+      mesas: INITIAL_MESAS.map(m => ({ ...m, consumos: m.consumos || [] })),
+      movimientos: INITIAL_MOVIMIENTOS,
+      ventas: INITIAL_VENTAS,
+      creditos: INITIAL_CREDITOS,
+      prestamos: INITIAL_PRESTAMOS,
+      cierres: [],
+      auditoria: []
+    };
+    categories.splice(0, categories.length, 'Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios');
+
     if (!isMockMode && supabase) {
       try {
         await supabase.from('cierres').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -1377,6 +1744,7 @@ export const mockDb = {
         await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('insumos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('sedes').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('auditoria').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
         await supabase.from('sedes').insert(INITIAL_SEDES);
         await supabase.from('insumos').insert(INITIAL_INSUMOS);
@@ -1392,8 +1760,7 @@ export const mockDb = {
     }
   },
   clearAllData: async (): Promise<void> => {
-    const currentMesas = getLocalStorage<Mesa[]>('alico_mesas', []);
-    const clearedMesas = currentMesas.map(m => ({
+    const clearedMesas = memoryDb.mesas.map(m => ({
       ...m,
       estado: 'DISPONIBLE' as const,
       cliente_nombre: '',
@@ -1410,6 +1777,17 @@ export const mockDb = {
     setLocalStorage('alico_cierres', []);
     setLocalStorage('alico_categorias', ['Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios']);
 
+    memoryDb.insumos = [];
+    memoryDb.productos = [];
+    memoryDb.mesas = clearedMesas;
+    memoryDb.movimientos = [];
+    memoryDb.ventas = [];
+    memoryDb.creditos = [];
+    memoryDb.prestamos = [];
+    memoryDb.cierres = [];
+    memoryDb.auditoria = [];
+    categories.splice(0, categories.length, 'Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios');
+
     if (!isMockMode && supabase) {
       try {
         await supabase.from('cierres').delete().neq('id', '00000000-0000-0000-0000-000000000000');
@@ -1424,6 +1802,7 @@ export const mockDb = {
         
         await supabase.from('productos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         await supabase.from('insumos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('auditoria').delete().neq('id', '00000000-0000-0000-0000-000000000000');
       } catch (err) {
         console.error('Error clear remote Supabase:', err);
       }

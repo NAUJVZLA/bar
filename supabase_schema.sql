@@ -10,6 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 DROP TABLE IF EXISTS creditos CASCADE;
 DROP TABLE IF EXISTS prestamos CASCADE;
 DROP TABLE IF EXISTS cierres CASCADE;
+DROP TABLE IF EXISTS auditoria CASCADE;
 DROP TABLE IF EXISTS detalle_ventas CASCADE; -- Obsoleta (reemplazada por JSONB en ventas)
 DROP TABLE IF EXISTS ventas CASCADE;
 DROP TABLE IF EXISTS movimientos CASCADE;
@@ -93,6 +94,8 @@ CREATE TABLE ventas (
     atendido_por VARCHAR(100) NOT NULL,
     es_directa BOOLEAN DEFAULT FALSE,
     items JSONB DEFAULT '[]'::jsonb, -- Ahora los detalles de venta viven íntegramente en la venta
+    estado VARCHAR(20) DEFAULT 'COMPLETADA' CHECK (estado IN ('COMPLETADA', 'ANULADA')),
+    razon_anulacion TEXT,
     fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -145,6 +148,16 @@ CREATE TABLE cierres (
     notas TEXT
 );
 
+-- 12. TABLA AUDITORIA (Historial de Auditoría)
+CREATE TABLE auditoria (
+    id VARCHAR(100) PRIMARY KEY DEFAULT uuid_generate_v4()::text,
+    sede_id VARCHAR(100) NOT NULL REFERENCES sedes(id) ON DELETE CASCADE,
+    usuario VARCHAR(100) NOT NULL,
+    accion VARCHAR(100) NOT NULL,
+    detalle TEXT NOT NULL,
+    fecha_hora TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- ==============================================================
 -- POLÍTICAS DE SEGURIDAD (RLS - Row Level Security)
 -- ==============================================================
@@ -158,6 +171,7 @@ ALTER TABLE ventas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE creditos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prestamos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cierres ENABLE ROW LEVEL SECURITY;
+ALTER TABLE auditoria ENABLE ROW LEVEL SECURITY;
 
 -- Permisos
 CREATE POLICY "Acceso total sedes" ON sedes FOR ALL USING (true) WITH CHECK (true);
@@ -169,6 +183,7 @@ CREATE POLICY "Acceso total ventas" ON ventas FOR ALL USING (true) WITH CHECK (t
 CREATE POLICY "Acceso total creditos" ON creditos FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total prestamos" ON prestamos FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Acceso total cierres" ON cierres FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Acceso total auditoria" ON auditoria FOR ALL USING (true) WITH CHECK (true);
 
 -- ==============================================================
 -- SUPABASE REALTIME (WebSockets)
