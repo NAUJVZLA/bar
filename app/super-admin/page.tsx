@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { mockDb, Sede, Venta, Producto, getMockData, supabase, isMockMode } from '@/lib/supabaseClient';
+import { mockDb, Sede, Venta, Producto, CreditoCliente, CierreCaja, PrestamoBotella, getMockData, supabase, isMockMode } from '@/lib/supabaseClient';
 
 export default function SuperAdminPage() {
   const router = useRouter();
@@ -30,6 +30,20 @@ export default function SuperAdminPage() {
 
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const [creditos, setCreditos] = useState<CreditoCliente[]>([]);
+  const [cierres, setCierres] = useState<CierreCaja[]>([]);
+  const [prestamos, setPrestamos] = useState<PrestamoBotella[]>([]);
+
+  // Filtros y Pestañas para Depuración
+  const [selectedSedeFilter, setSelectedSedeFilter] = useState<string>('TODAS');
+  const [debugSearchTerm, setDebugSearchTerm] = useState('');
+  const [activeDebugTab, setActiveDebugTab] = useState<'ventas' | 'creditos' | 'cierres' | 'prestamos'>('ventas');
+
+  // Modal de Confirmación para Borrado Individual
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<any>(null);
+  const [typeToDelete, setTypeToDelete] = useState<'venta' | 'credito' | 'cierre' | 'prestamo' | null>(null);
 
   useEffect(() => {
     // Guard de Sesión para Super Admin
@@ -59,6 +73,53 @@ export default function SuperAdminPage() {
     setSedes(mockDb.getSedes());
     setVentas(mockDb.getVentas());
     setProductos(mockDb.getProductos());
+    setCreditos(mockDb.getCreditos());
+    setCierres(mockDb.getCierres());
+    setPrestamos(mockDb.getPrestamos());
+  };
+
+  const handleOpenDeleteModal = (item: any, type: 'venta' | 'credito' | 'cierre' | 'prestamo') => {
+    setItemToDelete(item);
+    setTypeToDelete(type);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!itemToDelete || !typeToDelete) return;
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    try {
+      const activeUser = userName || 'Super Admin';
+      let res = false;
+      if (typeToDelete === 'venta') {
+        res = mockDb.eliminarVenta(itemToDelete.id, activeUser);
+        if (res) setSuccessMsg('Venta eliminada con éxito (incluyendo su crédito asociado si existía).');
+      } else if (typeToDelete === 'credito') {
+        res = mockDb.eliminarCredito(itemToDelete.id, activeUser);
+        if (res) setSuccessMsg('Crédito de cartera eliminado con éxito.');
+      } else if (typeToDelete === 'cierre') {
+        res = mockDb.eliminarCierre(itemToDelete.id, activeUser);
+        if (res) setSuccessMsg('Arqueo de caja (cierre) eliminado con éxito.');
+      } else if (typeToDelete === 'prestamo') {
+        res = mockDb.eliminarPrestamo(itemToDelete.id, activeUser);
+        if (res) setSuccessMsg('Registro de préstamo eliminado con éxito.');
+      }
+
+      if (res) {
+        loadData();
+        // Emitir cambio de sede global por seguridad
+        window.dispatchEvent(new Event('sedeChanged'));
+      } else {
+        setErrorMsg('No se pudo eliminar el registro.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Error al eliminar el registro.');
+    } finally {
+      setShowDeleteModal(false);
+      setItemToDelete(null);
+      setTypeToDelete(null);
+    }
   };
 
   const handleLogout = () => {
@@ -662,6 +723,365 @@ export default function SuperAdminPage() {
 
         </div >
 
+        {/* SECCIÓN DE DEPURACIÓN Y LIMPIEZA SELECTIVA */}
+        <section className="glass-panel border border-white/5 rounded-2xl p-6 relative overflow-hidden space-y-6">
+          <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-amber-500/20 via-yellow-500/40 to-transparent"></div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <span className="text-[10px] font-black tracking-widest bg-amber-500/20 text-amber-400 px-2.5 py-0.5 rounded-lg uppercase border border-amber-500/20">
+                Herramientas de Depuración
+              </span>
+              <h2 className="text-lg font-black text-white mt-2 font-sans flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-5 h-5 text-amber-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z" />
+                </svg>
+                Depuración y Limpieza Selectiva (Registros de Prueba)
+              </h2>
+              <p className="text-xs text-zinc-400 mt-1">
+                Elimina selectivamente transacciones simuladas o de ensayo para no descuadrar tus reportes reales de ventas.
+              </p>
+            </div>
+          </div>
+
+          {/* Filtros de Búsqueda y Sede */}
+          <div className="flex flex-col sm:flex-row gap-3 bg-black/30 p-3.5 rounded-2xl border border-white/5">
+            <div className="flex-1">
+              <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1 pl-1">Buscar por cliente o detalle</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={debugSearchTerm}
+                  onChange={(e) => setDebugSearchTerm(e.target.value)}
+                  placeholder="Escribe cliente o descripción..."
+                  className="w-full h-9 pl-8 pr-3 rounded-xl glass-input text-xs text-white"
+                />
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4 text-zinc-500 absolute left-2.5 top-2.5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.602 10.602z" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="sm:w-64">
+              <label className="block text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1 pl-1">Filtrar Sede</label>
+              <select
+                value={selectedSedeFilter}
+                onChange={(e) => setSelectedSedeFilter(e.target.value)}
+                className="w-full h-9 px-3 rounded-xl glass-input text-xs text-white cursor-pointer"
+              >
+                <option value="TODAS">Ver Todas las Sedes</option>
+                {sedes.map((s) => (
+                  <option key={s.id} value={s.id}>{s.nombre}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Pestañas de Navegación del Panel */}
+          <div className="flex border-b border-white/5 gap-1.5 overflow-x-auto pb-1">
+            <button
+              onClick={() => setActiveDebugTab('ventas')}
+              className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 whitespace-nowrap ${
+                activeDebugTab === 'ventas'
+                  ? 'border-amber-500 text-amber-500 bg-amber-500/5'
+                  : 'border-transparent text-zinc-400 hover:text-white bg-transparent'
+              }`}
+            >
+              Historial de Ventas ({ventas.length})
+            </button>
+            <button
+              onClick={() => setActiveDebugTab('creditos')}
+              className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 whitespace-nowrap ${
+                activeDebugTab === 'creditos'
+                  ? 'border-amber-500 text-amber-500 bg-amber-500/5'
+                  : 'border-transparent text-zinc-400 hover:text-white bg-transparent'
+              }`}
+            >
+              Cartera de Créditos ({creditos.length})
+            </button>
+            <button
+              onClick={() => setActiveDebugTab('cierres')}
+              className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 whitespace-nowrap ${
+                activeDebugTab === 'cierres'
+                  ? 'border-amber-500 text-amber-500 bg-amber-500/5'
+                  : 'border-transparent text-zinc-400 hover:text-white bg-transparent'
+              }`}
+            >
+              Arqueos / Cierres ({cierres.length})
+            </button>
+            <button
+              onClick={() => setActiveDebugTab('prestamos')}
+              className={`px-4 py-2 text-xs font-bold rounded-t-xl transition-all border-b-2 whitespace-nowrap ${
+                activeDebugTab === 'prestamos'
+                  ? 'border-amber-500 text-amber-500 bg-amber-500/5'
+                  : 'border-transparent text-zinc-400 hover:text-white bg-transparent'
+              }`}
+            >
+              Préstamos de Envases ({prestamos.length})
+            </button>
+          </div>
+
+          {/* Tablas de Contenido */}
+          <div className="overflow-x-auto">
+            {activeDebugTab === 'ventas' && (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5 text-[9px] font-bold text-zinc-500 uppercase tracking-widest bg-black/20">
+                    <th className="py-2.5 px-2">Sede</th>
+                    <th className="py-2.5 px-2">Fecha y Hora</th>
+                    <th className="py-2.5 px-2">Cliente</th>
+                    <th className="py-2.5 px-2">Método</th>
+                    <th className="py-2.5 px-2 text-right">Total</th>
+                    <th className="py-2.5 px-2">Atendido Por</th>
+                    <th className="py-2.5 px-2 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {ventas
+                    .filter(v => selectedSedeFilter === 'TODAS' || v.sede_id === selectedSedeFilter)
+                    .filter(v => v.cliente_nombre.toLowerCase().includes(debugSearchTerm.toLowerCase()) || v.id.toLowerCase().includes(debugSearchTerm.toLowerCase()))
+                    .length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-4 text-center text-zinc-600 font-semibold">
+                          No se encontraron ventas para los criterios de filtro activos.
+                        </td>
+                      </tr>
+                    ) : (
+                      ventas
+                        .filter(v => selectedSedeFilter === 'TODAS' || v.sede_id === selectedSedeFilter)
+                        .filter(v => v.cliente_nombre.toLowerCase().includes(debugSearchTerm.toLowerCase()) || v.id.toLowerCase().includes(debugSearchTerm.toLowerCase()))
+                        .map((v) => {
+                          const sede = sedes.find(s => s.id === v.sede_id);
+                          const fecha = new Date(v.fecha_hora);
+                          const fechaStr = fecha.toLocaleDateString('es-CO') + ' ' + fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+                          return (
+                            <tr key={v.id} className="text-[11px] text-zinc-300 hover:bg-white/[0.02] transition-colors">
+                              <td className="py-2 px-2 font-bold text-white max-w-[120px] truncate">{sede?.nombre || 'Sede Eliminada'}</td>
+                              <td className="py-2 px-2 font-mono text-[10px] text-zinc-500">{fechaStr}</td>
+                              <td className="py-2 px-2 text-zinc-400 font-medium">{v.cliente_nombre}</td>
+                              <td className="py-2 px-2 text-center text-[10px]">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] ${
+                                  v.metodo_pago === 'CREDITO' ? 'bg-red-500/10 text-red-400 border border-red-500/15' : 'bg-zinc-900 border border-white/5 text-zinc-400'
+                                }`}>
+                                  {v.metodo_pago}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2 text-right font-black text-emerald-400">${v.total.toLocaleString('es-CO')}</td>
+                              <td className="py-2 px-2 text-zinc-400">{v.atendido_por}</td>
+                              <td className="py-2 px-2 text-center">
+                                <button
+                                  onClick={() => handleOpenDeleteModal(v, 'venta')}
+                                  className="p-1 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-colors cursor-pointer"
+                                  title="Eliminar venta de forma definitiva"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                </tbody>
+              </table>
+            )}
+
+            {activeDebugTab === 'creditos' && (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5 text-[9px] font-bold text-zinc-500 uppercase tracking-widest bg-black/20">
+                    <th className="py-2.5 px-2">Sede</th>
+                    <th className="py-2.5 px-2">Fecha Registro</th>
+                    <th className="py-2.5 px-2">Cliente</th>
+                    <th className="py-2.5 px-2 text-right">Deuda Inicial</th>
+                    <th className="py-2.5 px-2 text-right">Monto Pagado</th>
+                    <th className="py-2.5 px-2 text-right">Saldo Restante</th>
+                    <th className="py-2.5 px-2 text-center">Estado</th>
+                    <th className="py-2.5 px-2 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {creditos
+                    .filter(c => selectedSedeFilter === 'TODAS' || c.sede_id === selectedSedeFilter)
+                    .filter(c => c.cliente_nombre.toLowerCase().includes(debugSearchTerm.toLowerCase()))
+                    .length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-4 text-center text-zinc-600 font-semibold">
+                          No se encontraron créditos de cartera para los criterios de filtro activos.
+                        </td>
+                      </tr>
+                    ) : (
+                      creditos
+                        .filter(c => selectedSedeFilter === 'TODAS' || c.sede_id === selectedSedeFilter)
+                        .filter(c => c.cliente_nombre.toLowerCase().includes(debugSearchTerm.toLowerCase()))
+                        .map((c) => {
+                          const sede = sedes.find(s => s.id === c.sede_id);
+                          const fecha = new Date(c.fecha_registro);
+                          const fechaStr = fecha.toLocaleDateString('es-CO') + ' ' + fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+                          const restante = c.total_deuda - c.total_pagado;
+                          return (
+                            <tr key={c.id} className="text-[11px] text-zinc-300 hover:bg-white/[0.02] transition-colors">
+                              <td className="py-2 px-2 font-bold text-white max-w-[120px] truncate">{sede?.nombre || 'Sede Eliminada'}</td>
+                              <td className="py-2 px-2 font-mono text-[10px] text-zinc-500">{fechaStr}</td>
+                              <td className="py-2 px-2 text-zinc-400 font-medium">{c.cliente_nombre}</td>
+                              <td className="py-2 px-2 text-right font-semibold text-zinc-300">${c.total_deuda.toLocaleString('es-CO')}</td>
+                              <td className="py-2 px-2 text-right text-emerald-400 font-semibold">${c.total_pagado.toLocaleString('es-CO')}</td>
+                              <td className="py-2 px-2 text-right font-black text-amber-500">${restante.toLocaleString('es-CO')}</td>
+                              <td className="py-2 px-2 text-center text-[10px]">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                  c.estado === 'PAGADO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'bg-red-500/10 text-red-400 border border-red-500/15'
+                                }`}>
+                                  {c.estado}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2 text-center">
+                                <button
+                                  onClick={() => handleOpenDeleteModal(c, 'credito')}
+                                  className="p-1 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-colors cursor-pointer"
+                                  title="Eliminar crédito de forma definitiva"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                </tbody>
+              </table>
+            )}
+
+            {activeDebugTab === 'cierres' && (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5 text-[9px] font-bold text-zinc-500 uppercase tracking-widest bg-black/20">
+                    <th className="py-2.5 px-2">Sede</th>
+                    <th className="py-2.5 px-2">Fecha y Hora</th>
+                    <th className="py-2.5 px-2">Registrado Por</th>
+                    <th className="py-2.5 px-2 text-right">Ventas Totales</th>
+                    <th className="py-2.5 px-2 text-right">Monto Real</th>
+                    <th className="py-2.5 px-2 text-right">Descuadre</th>
+                    <th className="py-2.5 px-2 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {cierres
+                    .filter(c => selectedSedeFilter === 'TODAS' || c.sede_id === selectedSedeFilter)
+                    .filter(c => c.registrado_por.toLowerCase().includes(debugSearchTerm.toLowerCase()))
+                    .length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-4 text-center text-zinc-600 font-semibold">
+                          No se encontraron arqueos/cierres de caja para los criterios de filtro activos.
+                        </td>
+                      </tr>
+                    ) : (
+                      cierres
+                        .filter(c => selectedSedeFilter === 'TODAS' || c.sede_id === selectedSedeFilter)
+                        .filter(c => c.registrado_por.toLowerCase().includes(debugSearchTerm.toLowerCase()))
+                        .map((c) => {
+                          const sede = sedes.find(s => s.id === c.sede_id);
+                          const fecha = new Date(c.fecha_hora);
+                          const fechaStr = fecha.toLocaleDateString('es-CO') + ' ' + fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+                          return (
+                            <tr key={c.id} className="text-[11px] text-zinc-300 hover:bg-white/[0.02] transition-colors">
+                              <td className="py-2 px-2 font-bold text-white max-w-[120px] truncate">{sede?.nombre || 'Sede Eliminada'}</td>
+                              <td className="py-2 px-2 font-mono text-[10px] text-zinc-500">{fechaStr}</td>
+                              <td className="py-2 px-2 text-zinc-400 font-medium">{c.registrado_por}</td>
+                              <td className="py-2 px-2 text-right font-semibold text-zinc-300">${c.ventas_total.toLocaleString('es-CO')}</td>
+                              <td className="py-2 px-2 text-right font-semibold text-emerald-400">${c.monto_real.toLocaleString('es-CO')}</td>
+                              <td className={`py-2 px-2 text-right font-black ${
+                                c.descuadre !== 0 ? 'text-red-400' : 'text-zinc-500'
+                              }`}>
+                                {c.descuadre > 0 ? '+' : ''}${c.descuadre.toLocaleString('es-CO')}
+                              </td>
+                              <td className="py-2 px-2 text-center">
+                                <button
+                                  onClick={() => handleOpenDeleteModal(c, 'cierre')}
+                                  className="p-1 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-colors cursor-pointer"
+                                  title="Eliminar cierre de caja de forma definitiva"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                </tbody>
+              </table>
+            )}
+
+            {activeDebugTab === 'prestamos' && (
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-white/5 text-[9px] font-bold text-zinc-500 uppercase tracking-widest bg-black/20">
+                    <th className="py-2.5 px-2">Sede</th>
+                    <th className="py-2.5 px-2">Fecha Préstamo</th>
+                    <th className="py-2.5 px-2">Cliente</th>
+                    <th className="py-2.5 px-2">Nombre Botella</th>
+                    <th className="py-2.5 px-2 text-right">Cantidad</th>
+                    <th className="py-2.5 px-2 text-center">Estado</th>
+                    <th className="py-2.5 px-2 text-center">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {prestamos
+                    .filter(p => selectedSedeFilter === 'TODAS' || p.sede_id === selectedSedeFilter)
+                    .filter(p => p.cliente_nombre.toLowerCase().includes(debugSearchTerm.toLowerCase()) || p.botella_nombre.toLowerCase().includes(debugSearchTerm.toLowerCase()))
+                    .length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-4 text-center text-zinc-600 font-semibold">
+                          No se encontraron préstamos de envases para los criterios de filtro activos.
+                        </td>
+                      </tr>
+                    ) : (
+                      prestamos
+                        .filter(p => selectedSedeFilter === 'TODAS' || p.sede_id === selectedSedeFilter)
+                        .filter(p => p.cliente_nombre.toLowerCase().includes(debugSearchTerm.toLowerCase()) || p.botella_nombre.toLowerCase().includes(debugSearchTerm.toLowerCase()))
+                        .map((p) => {
+                          const sede = sedes.find(s => s.id === p.sede_id);
+                          const fecha = new Date(p.fecha_prestamo);
+                          const fechaStr = fecha.toLocaleDateString('es-CO') + ' ' + fecha.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+                          return (
+                            <tr key={p.id} className="text-[11px] text-zinc-300 hover:bg-white/[0.02] transition-colors">
+                              <td className="py-2 px-2 font-bold text-white max-w-[120px] truncate">{sede?.nombre || 'Sede Eliminada'}</td>
+                              <td className="py-2 px-2 font-mono text-[10px] text-zinc-500">{fechaStr}</td>
+                              <td className="py-2 px-2 text-zinc-400 font-medium">{p.cliente_nombre}</td>
+                              <td className="py-2 px-2 text-zinc-400">{p.botella_nombre}</td>
+                              <td className="py-2 px-2 text-right font-bold text-zinc-300">{p.cantidad} U.</td>
+                              <td className="py-2 px-2 text-center text-[10px]">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                  p.estado === 'DEVUELTO' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/15' : 'bg-amber-500/10 text-amber-400 border border-amber-500/15'
+                                }`}>
+                                  {p.estado}
+                                </span>
+                              </td>
+                              <td className="py-2 px-2 text-center">
+                                <button
+                                  onClick={() => handleOpenDeleteModal(p, 'prestamo')}
+                                  className="p-1 text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-lg transition-colors cursor-pointer"
+                                  title="Eliminar préstamo de forma definitiva"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                    )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+
     {/* Sección: Base de Datos & Seguridad */ }
     < section className = "glass-panel border border-white/5 rounded-2xl p-6 relative overflow-hidden space-y-6" >
           <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-red-500/20 via-red-500/40 to-transparent"></div>
@@ -847,6 +1267,51 @@ export default function SuperAdminPage() {
       </div>
     )
   }
+
+  {/* Modal de Confirmación para Borrado Individual */}
+  {showDeleteModal && itemToDelete && typeToDelete && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-fade-in">
+      <div className="glass-card border border-red-500/25 shadow-2xl shadow-red-500/5 rounded-3xl p-6 md:p-8 w-full max-w-sm relative overflow-hidden bg-[#06060c]/95 text-center">
+        <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full blur-2xl opacity-20 pointer-events-none bg-red-500"></div>
+
+        <div className="flex justify-center mb-4">
+          <div className="h-14 w-14 rounded-2xl flex items-center justify-center border bg-red-500/10 text-red-400 border-red-500/20 shadow-red-500/10">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-7 h-7">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+            </svg>
+          </div>
+        </div>
+
+        <h3 className="text-base font-bold text-white mb-2">¿Confirmar eliminación definitiva?</h3>
+        <p className="text-xs text-zinc-400 mb-6 leading-relaxed">
+          {typeToDelete === 'venta' && `Esto eliminará permanentemente la venta de ${itemToDelete.cliente_nombre} por $${itemToDelete.total.toLocaleString('es-CO')}. Si fue una venta a crédito, también se borrará el crédito de cartera.`}
+          {typeToDelete === 'credito' && `Esto eliminará permanentemente el crédito de ${itemToDelete.cliente_nombre} por $${itemToDelete.total_deuda.toLocaleString('es-CO')} de la cartera de fiados.`}
+          {typeToDelete === 'cierre' && `Esto eliminará permanentemente el arqueo/cierre de caja registrado el ${new Date(itemToDelete.fecha_hora).toLocaleDateString('es-CO')} por un total de $${itemToDelete.ventas_total.toLocaleString('es-CO')}.`}
+          {typeToDelete === 'prestamo' && `Esto eliminará permanentemente el préstamo de ${itemToDelete.cantidad} botellas de ${itemToDelete.botella_nombre} a ${itemToDelete.cliente_nombre}.`}
+        </p>
+
+        <div className="flex flex-col gap-2">
+          <button
+            onClick={handleConfirmDelete}
+            className="w-full h-10 rounded-xl bg-red-500 hover:bg-red-600 text-black text-xs font-black transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-red-500/10 cursor-pointer"
+          >
+            Confirmar y Borrar
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowDeleteModal(false);
+              setItemToDelete(null);
+              setTypeToDelete(null);
+            }}
+            className="w-full h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-zinc-300 hover:text-white text-xs font-bold transition-all"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
     </div >
   );
 }

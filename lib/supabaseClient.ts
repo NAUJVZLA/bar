@@ -1708,6 +1708,99 @@ export const mockDb = {
     return sedeId ? logs.filter(l => l.sede_id === sedeId) : logs;
   },
 
+  eliminarVenta: (id: string, usuario?: string): boolean => {
+    const v = memoryDb.ventas.find(x => x.id === id);
+    const detalle = v ? `Venta por valor de $${v.total.toLocaleString('es-CO')} a ${v.cliente_nombre}.` : id;
+    const SedeId = v ? v.sede_id : 'sede-norte';
+    
+    // Si la venta era a crédito, eliminar también el crédito asociado si existe
+    if (v && v.metodo_pago === 'CREDITO') {
+      const associatedCred = memoryDb.creditos.find(c => c.venta_id === id);
+      if (associatedCred) {
+        memoryDb.creditos = memoryDb.creditos.filter(c => c.id !== associatedCred.id);
+        if (isMockMode) {
+          saveMockData({ creditos: memoryDb.creditos });
+        } else {
+          runAsyncSupabase(async () => {
+            await supabase!.from('creditos').delete().eq('venta_id', id);
+          });
+        }
+        mockDb.registrarAuditLog(
+          SedeId,
+          usuario || 'Super Admin',
+          'ELIMINAR_CREDITO_ASOCIADO',
+          `Eliminó automáticamente el crédito asociado al eliminar la venta #${id}.`
+        );
+      }
+    }
+
+    memoryDb.ventas = memoryDb.ventas.filter(x => x.id !== id);
+    
+    if (isMockMode) {
+      saveMockData({ ventas: memoryDb.ventas });
+    } else {
+      runAsyncSupabase(async () => {
+        await supabase!.from('ventas').delete().eq('id', id);
+      });
+    }
+    
+    mockDb.registrarAuditLog(
+      SedeId,
+      usuario || 'Super Admin',
+      'ELIMINAR_VENTA',
+      `Eliminó permanentemente un registro de venta del historial: ${detalle}`
+    );
+    return true;
+  },
+
+  eliminarCredito: (id: string, usuario?: string): boolean => {
+    const cred = memoryDb.creditos.find(c => c.id === id);
+    const detalle = cred ? `Crédito de $${cred.total_deuda.toLocaleString('es-CO')} al cliente ${cred.cliente_nombre}.` : id;
+    const SedeId = cred ? cred.sede_id : 'sede-norte';
+    
+    memoryDb.creditos = memoryDb.creditos.filter(c => c.id !== id);
+    
+    if (isMockMode) {
+      saveMockData({ creditos: memoryDb.creditos });
+    } else {
+      runAsyncSupabase(async () => {
+        await supabase!.from('creditos').delete().eq('id', id);
+      });
+    }
+    
+    mockDb.registrarAuditLog(
+      SedeId,
+      usuario || 'Super Admin',
+      'ELIMINAR_CREDITO',
+      `Eliminó un registro de crédito del historial: ${detalle}`
+    );
+    return true;
+  },
+
+  eliminarCierre: (id: string, usuario?: string): boolean => {
+    const c = memoryDb.cierres.find(x => x.id === id);
+    const detalle = c ? `Arqueo/Cierre de caja con total ventas $${c.ventas_total.toLocaleString('es-CO')} por ${c.registrado_por}.` : id;
+    const SedeId = c ? c.sede_id : 'sede-norte';
+    
+    memoryDb.cierres = memoryDb.cierres.filter(x => x.id !== id);
+    
+    if (isMockMode) {
+      saveMockData({ cierres: memoryDb.cierres });
+    } else {
+      runAsyncSupabase(async () => {
+        await supabase!.from('cierres').delete().eq('id', id);
+      });
+    }
+    
+    mockDb.registrarAuditLog(
+      SedeId,
+      usuario || 'Super Admin',
+      'ELIMINAR_CIERRE',
+      `Eliminó permanentemente un arqueo de caja (cierre): ${detalle}`
+    );
+    return true;
+  },
+
   // --- RESET/CLEAN DATA ---
   resetDbToDemo: async (): Promise<void> => {
     setLocalStorage('alico_sedes', INITIAL_SEDES);
