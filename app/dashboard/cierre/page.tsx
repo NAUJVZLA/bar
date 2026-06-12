@@ -11,7 +11,7 @@ export default function CierreCajaPage() {
   const [historicoCierres, setHistoricoCierres] = useState<CierreCaja[]>([]);
 
   // Inputs del Formulario
-  const [baseApertura, setBaseApertura] = useState<number>(100000);
+  const [baseApertura, setBaseApertura] = useState<number>(50000);
   const [efectivoReal, setEfectivoReal] = useState<string>('');
   const [notas, setNotas] = useState('');
   const [selectedCierreImprimir, setSelectedCierreImprimir] = useState<CierreCaja | null>(null);

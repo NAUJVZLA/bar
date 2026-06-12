@@ -30,6 +30,8 @@ export default function MesasPage() {
   const [atendidoPorConsumo, setAtendidoPorConsumo] = useState('');
   const [clienteNombreConsumo, setClienteNombreConsumo] = useState('');
   const [entregadoPorConsumo, setEntregadoPorConsumo] = useState('');
+  const [busquedaConsumo, setBusquedaConsumo] = useState('');
+  const [categoriaConsumo, setCategoriaConsumo] = useState('TODOS');
 
   // Edición nombre mesa
   const [isEditingMesaName, setIsEditingMesaName] = useState(false);
@@ -62,6 +64,19 @@ export default function MesasPage() {
     return () => { window.removeEventListener('sedeChanged', handleSedeChange); window.removeEventListener('cloudSync', handleCloudSync); };
   }, []);
 
+  // Categorías de productos para el consumo de mesas
+  const categoriasConsumo = ['TODOS', ...Array.from(new Set(productos.map(p => p.categoria)))];
+
+  // Productos ordenados alfabéticamente y filtrados para el consumo de mesas
+  const productosFiltradosConsumo = [...productos]
+    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+    .filter(p => {
+      const matchesSearch = p.nombre.toLowerCase().includes(busquedaConsumo.toLowerCase()) || 
+                            p.codigo_barras.includes(busquedaConsumo);
+      const matchesCategory = categoriaConsumo === 'TODOS' || p.categoria === categoriaConsumo;
+      return matchesSearch && matchesCategory;
+    });
+
   const closeAllModals = () => {
     setSelectedMesa(null);
     setShowOpenModal(false);
@@ -78,6 +93,8 @@ export default function MesasPage() {
     setIsEditingMesaName(false);
     setErrorMsg('');
     setSuccessMsg('');
+    setBusquedaConsumo('');
+    setCategoriaConsumo('TODOS');
   };
 
   // 1. ABRIR MESA (DISPONIBLE -> OCUPADA)
@@ -664,7 +681,77 @@ export default function MesasPage() {
             <form onSubmit={submitAddConsumo} className="space-y-4">
               <div>
                 <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
-                  Seleccionar Producto
+                  Buscar Producto
+                </label>
+                <div className="relative mb-3">
+                  <input
+                    type="text"
+                    value={busquedaConsumo}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setBusquedaConsumo(val);
+                      
+                      // Auto-select if there is exactly one result
+                      const filtered = [...productos]
+                        .sort((a, b) => a.nombre.localeCompare(b.nombre))
+                        .filter(p => {
+                          const matchesSearch = p.nombre.toLowerCase().includes(val.toLowerCase()) || 
+                                                p.codigo_barras.includes(val);
+                          const matchesCategory = categoriaConsumo === 'TODOS' || p.categoria === categoriaConsumo;
+                          return matchesSearch && matchesCategory;
+                        });
+                      if (filtered.length === 1 && filtered[0].stock_actual > 0) {
+                        setSelectedProdId(filtered[0].id);
+                      } else {
+                        setSelectedProdId('');
+                      }
+                    }}
+                    placeholder="Buscar por nombre o código..."
+                    className="w-full h-10 pl-9 pr-4 rounded-xl glass-input text-xs text-white font-sans"
+                  />
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-zinc-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-3.5 h-3.5">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.602 10.602z" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Categorías slider/tabs */}
+                <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 scrollbar-none">
+                  {categoriasConsumo.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => {
+                        setCategoriaConsumo(cat);
+                        // Auto-select if there is exactly one result
+                        const filtered = [...productos]
+                          .sort((a, b) => a.nombre.localeCompare(b.nombre))
+                          .filter(p => {
+                            const matchesSearch = p.nombre.toLowerCase().includes(busquedaConsumo.toLowerCase()) || 
+                                                  p.codigo_barras.includes(busquedaConsumo);
+                            const matchesCategory = cat === 'TODOS' || p.categoria === cat;
+                            return matchesSearch && matchesCategory;
+                          });
+                        if (filtered.length === 1 && filtered[0].stock_actual > 0) {
+                          setSelectedProdId(filtered[0].id);
+                        } else {
+                          setSelectedProdId('');
+                        }
+                      }}
+                      className={`py-1 px-2.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all ${
+                        categoriaConsumo === cat
+                          ? 'bg-amber-500 text-black shadow-md shadow-amber-500/10'
+                          : 'bg-zinc-950/40 text-zinc-400 hover:text-white border border-white/5'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="block text-[9px] font-bold text-zinc-400 uppercase tracking-widest mb-1.5">
+                  Seleccionar Producto ({productosFiltradosConsumo.length})
                 </label>
                 <select
                   value={selectedProdId}
@@ -673,9 +760,9 @@ export default function MesasPage() {
                   className="w-full bg-[#0a0a0c] border border-white/10 rounded-lg py-2 px-2.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer"
                 >
                   <option value="">Selecciona un licor / bebida...</option>
-                  {productos.map((p) => (
+                  {productosFiltradosConsumo.map((p) => (
                     <option key={p.id} value={p.id} disabled={p.stock_actual <= 0}>
-                      {p.nombre} (Dispo: {p.stock_actual}) - ${p.precio_venta.toLocaleString('es-CO')}
+                      {p.nombre} (Stock: {p.stock_actual}) - ${p.precio_venta.toLocaleString('es-CO')}
                     </option>
                   ))}
                 </select>

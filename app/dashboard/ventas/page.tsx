@@ -56,13 +56,15 @@ export default function VentasPage() {
   // Categorías únicas
   const categorias = ['TODOS', ...Array.from(new Set(productos.map(p => p.categoria)))];
 
-  // Filtrado de productos
-  const productosFiltrados = productos.filter(p => {
-    const matchesSearch = p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
-                          p.codigo_barras.includes(busqueda);
-    const matchesCategory = categoriaActiva === 'TODOS' || p.categoria === categoriaActiva;
-    return matchesSearch && matchesCategory;
-  });
+  // Filtrado de productos ordenados alfabéticamente
+  const productosFiltrados = [...productos]
+    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+    .filter(p => {
+      const matchesSearch = p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
+                            p.codigo_barras.includes(busqueda);
+      const matchesCategory = categoriaActiva === 'TODOS' || p.categoria === categoriaActiva;
+      return matchesSearch && matchesCategory;
+    });
 
   // Agregar al carrito
   const addToCart = (producto: Producto) => {
