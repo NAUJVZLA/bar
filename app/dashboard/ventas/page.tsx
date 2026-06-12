@@ -61,7 +61,7 @@ export default function VentasPage() {
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
     .filter(p => {
       const matchesSearch = p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
-                            p.codigo_barras.includes(busqueda);
+                            (p.codigo_barras || '').includes(busqueda);
       const matchesCategory = categoriaActiva === 'TODOS' || p.categoria === categoriaActiva;
       return matchesSearch && matchesCategory;
     });

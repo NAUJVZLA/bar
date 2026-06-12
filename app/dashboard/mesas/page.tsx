@@ -72,10 +72,20 @@ export default function MesasPage() {
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
     .filter(p => {
       const matchesSearch = p.nombre.toLowerCase().includes(busquedaConsumo.toLowerCase()) || 
-                            p.codigo_barras.includes(busquedaConsumo);
+                            (p.codigo_barras || '').includes(busquedaConsumo);
       const matchesCategory = categoriaConsumo === 'TODOS' || p.categoria === categoriaConsumo;
       return matchesSearch && matchesCategory;
     });
+
+  // Limpiar selección de producto si el producto elegido es filtrado fuera de la lista
+  useEffect(() => {
+    if (selectedProdId) {
+      const exists = productosFiltradosConsumo.some(p => p.id === selectedProdId);
+      if (!exists) {
+        setSelectedProdId('');
+      }
+    }
+  }, [productosFiltradosConsumo, selectedProdId]);
 
   const closeAllModals = () => {
     setSelectedMesa(null);
@@ -687,23 +697,10 @@ export default function MesasPage() {
                   <input
                     type="text"
                     value={busquedaConsumo}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setBusquedaConsumo(val);
-                      
-                      // Auto-select if there is exactly one result
-                      const filtered = [...productos]
-                        .sort((a, b) => a.nombre.localeCompare(b.nombre))
-                        .filter(p => {
-                          const matchesSearch = p.nombre.toLowerCase().includes(val.toLowerCase()) || 
-                                                p.codigo_barras.includes(val);
-                          const matchesCategory = categoriaConsumo === 'TODOS' || p.categoria === categoriaConsumo;
-                          return matchesSearch && matchesCategory;
-                        });
-                      if (filtered.length === 1 && filtered[0].stock_actual > 0) {
-                        setSelectedProdId(filtered[0].id);
-                      } else {
-                        setSelectedProdId('');
+                    onChange={(e) => setBusquedaConsumo(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
                       }
                     }}
                     placeholder="Buscar por nombre o código..."
@@ -722,23 +719,7 @@ export default function MesasPage() {
                     <button
                       key={cat}
                       type="button"
-                      onClick={() => {
-                        setCategoriaConsumo(cat);
-                        // Auto-select if there is exactly one result
-                        const filtered = [...productos]
-                          .sort((a, b) => a.nombre.localeCompare(b.nombre))
-                          .filter(p => {
-                            const matchesSearch = p.nombre.toLowerCase().includes(busquedaConsumo.toLowerCase()) || 
-                                                  p.codigo_barras.includes(busquedaConsumo);
-                            const matchesCategory = cat === 'TODOS' || p.categoria === cat;
-                            return matchesSearch && matchesCategory;
-                          });
-                        if (filtered.length === 1 && filtered[0].stock_actual > 0) {
-                          setSelectedProdId(filtered[0].id);
-                        } else {
-                          setSelectedProdId('');
-                        }
-                      }}
+                      onClick={() => setCategoriaConsumo(cat)}
                       className={`py-1 px-2.5 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all ${
                         categoriaConsumo === cat
                           ? 'bg-amber-500 text-black shadow-md shadow-amber-500/10'
