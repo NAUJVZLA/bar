@@ -41,6 +41,21 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[#030303] text-[#f8fafc] font-sans selection:bg-[#f59e0b]/30 selection:text-white">
         {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                    console.log('ServiceWorker registrado con éxito:', reg.scope);
+                  }).catch(function(err) {
+                    console.error('Error al registrar ServiceWorker:', err);
+                  });
+                });
+              }
+            `
+          }}
+        />
       </body>
     </html>
   );
