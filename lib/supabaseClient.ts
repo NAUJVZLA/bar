@@ -567,6 +567,26 @@ let activeSyncsCount = 0;
 
 export const syncFromSupabase = async (): Promise<boolean> => {
   if (isMockMode || !supabase) return false;
+  
+  // 1. Evitar descargar de la nube si hay cambios locales pendientes de subir
+  if (db) {
+    try {
+      const pendingCount = await db.cola_sincronizacion.count();
+      if (pendingCount > 0) {
+        console.log(`⏳ [Alico Sync] Descarga pospuesta. Hay ${pendingCount} cambios locales pendientes de sincronizar.`);
+        // Intentar subir los cambios locales antes de descargar
+        await syncService.syncPendingQueue();
+        const newPendingCount = await db.cola_sincronizacion.count();
+        if (newPendingCount > 0) {
+          console.warn('⚠️ [Alico Sync] Aún hay cambios pendientes tras intentar sincronizar. Abortando descarga.');
+          return false; // Evitamos sobrescribir cambios locales
+        }
+      }
+    } catch (dbErr) {
+      console.error('⚠️ [Alico Sync] Error verificando cola de sincronización:', dbErr);
+    }
+  }
+
   if (activeSyncsCount > 0) {
     console.log('⏳ [Alico Sync] Sincronización entrante omitida porque hay subidas locales en progreso.');
     return false;
