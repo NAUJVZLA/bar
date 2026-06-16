@@ -131,6 +131,17 @@ class SyncService {
 
       if (error) {
         console.error(`❌ [Sync Mesa RPC] Error al ejecutar RPC para mesa ${mesaLocal.id}:`, error);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('sync_error_occurred', {
+            detail: {
+              tabla: 'mesas',
+              registro_id: mesaLocal.id,
+              tipo_operacion: 'UPDATE',
+              code: error.code || 'N/A',
+              message: error.message || error.details || 'Error en el RPC de mesas'
+            }
+          }));
+        }
         return this.handleSyncError(error, { tabla: 'mesas', registro_id: mesaLocal.id } as any);
       }
 
@@ -181,6 +192,17 @@ class SyncService {
    * Gestiona errores de base de datos vs errores de conectividad temporal.
    */
   private handleSyncError(error: any, op: SyncOperation): boolean {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sync_error_occurred', {
+        detail: {
+          tabla: op.tabla,
+          registro_id: op.registro_id,
+          tipo_operacion: op.tipo_operacion,
+          code: error.code || 'N/A',
+          message: error.message || error.details || 'Error de base de datos'
+        }
+      }));
+    }
     // Lista de códigos de error de Postgres SQL que representan fallos permanentes
     // (ej. Restricción de llave foránea inválida, violación de check constraint, etc.)
     const permanentDbErrors = ['23503', '23505', '23514', '42P01', '42703', '22P02'];

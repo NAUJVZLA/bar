@@ -18,7 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
   const [localDbReady, setLocalDbReady] = useState(false);
 
-  const { isOnline, pendingCount, isSyncing, forceSync } = useSyncQueue();
+  const { isOnline, pendingCount, isSyncing, forceSync, syncError } = useSyncQueue();
 
   useEffect(() => {
     // 1. Guard de Sesión
@@ -209,31 +209,39 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="text-md font-bold tracking-wider text-white">ALCO GASTRO BAR</span>
               <p className="text-[9px] text-zinc-500 font-semibold tracking-widest uppercase text-left">Admin Room</p>
               
-              <div className="flex items-center gap-1.5 mt-1">
-                {syncStatus === 'demo' ? (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8.5px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-sm">
-                    <span className="w-1 h-1 mr-1 rounded-full bg-amber-400 animate-pulse" />
-                    Modo Demo (Local)
-                  </span>
-                ) : !isOnline ? (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8.5px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-sm" title="Sin conexión a internet. Guardando todo localmente.">
-                    <span className="w-1 h-1 mr-1 rounded-full bg-amber-400 animate-pulse" />
-                    Offline {pendingCount > 0 && `(${pendingCount} pend.)`}
-                  </span>
-                ) : isSyncing || pendingCount > 0 ? (
-                  <button 
-                    onClick={forceSync}
-                    className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8.5px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-sm cursor-pointer hover:bg-blue-500/20 transition-all"
-                    title="Hay cambios locales pendientes. Haz clic para forzar sincronización ahora."
-                  >
-                    <span className="w-1 h-1 mr-1 rounded-full bg-blue-400 animate-pulse animate-bounce" />
-                    Sincronizando... ({pendingCount})
-                  </button>
-                ) : (
-                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8.5px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm" title="Todo sincronizado en la nube.">
-                    <span className="w-1 h-1 mr-1 rounded-full bg-emerald-400" />
-                    Producción Cloud
-                  </span>
+              <div className="flex flex-col gap-1.5 mt-1">
+                <div className="flex items-center gap-1.5">
+                  {syncStatus === 'demo' ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8.5px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-sm">
+                      <span className="w-1 h-1 mr-1 rounded-full bg-amber-400 animate-pulse" />
+                      Modo Demo (Local)
+                    </span>
+                  ) : !isOnline ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8.5px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-sm" title="Sin conexión a internet. Guardando todo localmente.">
+                      <span className="w-1 h-1 mr-1 rounded-full bg-amber-400 animate-pulse" />
+                      Offline {pendingCount > 0 && `(${pendingCount} pend.)`}
+                    </span>
+                  ) : isSyncing || pendingCount > 0 ? (
+                    <button 
+                      onClick={forceSync}
+                      className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8.5px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-sm cursor-pointer hover:bg-blue-500/20 transition-all"
+                      title="Hay cambios locales pendientes. Haz clic para forzar sincronización ahora."
+                    >
+                      <span className="w-1 h-1 mr-1 rounded-full bg-blue-400 animate-pulse animate-bounce" />
+                      Sincronizando... ({pendingCount})
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[8.5px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm" title="Todo sincronizado en la nube.">
+                      <span className="w-1 h-1 mr-1 rounded-full bg-emerald-400" />
+                      Producción Cloud
+                    </span>
+                  )}
+                </div>
+                {syncError && (
+                  <div className="p-2 bg-red-950/20 border border-red-500/20 text-red-400 rounded-lg text-[9px] font-semibold leading-normal max-w-[220px]">
+                    <p className="font-extrabold text-red-300">Error en {syncError.tabla} ({syncError.tipo_operacion}):</p>
+                    <p className="mt-0.5 text-[8.5px] opacity-90 break-words">{syncError.message} (Cód: {syncError.code})</p>
+                  </div>
                 )}
               </div>
             </div>
