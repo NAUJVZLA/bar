@@ -138,7 +138,7 @@ class SyncService {
       // Lo guardamos de vuelta en IndexedDB local para consolidar la "verdad" del servidor.
       if (data && data[0]) {
         const mesaConsolidada = data[0];
-        await db.mesas.put({
+        const localMesa = {
           id: mesaConsolidada.id,
           sede_id: mesaConsolidada.sede_id,
           numero_mesa: mesaConsolidada.numero_mesa,
@@ -146,7 +146,28 @@ class SyncService {
           cliente_nombre: mesaConsolidada.cliente_nombre,
           consumos: mesaConsolidada.consumos || [],
           updated_at: mesaConsolidada.updated_at
-        });
+        };
+        await db.mesas.put(localMesa);
+
+        // Actualizar caché de memoria (RAM)
+        try {
+          const { memoryDb } = await import('./supabaseClient');
+          if (memoryDb && memoryDb.mesas) {
+            const idx = memoryDb.mesas.findIndex(m => m.id === mesaConsolidada.id);
+            if (idx !== -1) {
+              memoryDb.mesas[idx] = localMesa;
+            } else {
+              memoryDb.mesas.push(localMesa);
+            }
+          }
+        } catch (memErr) {
+          console.error('❌ [Sync Mesa RPC] Error actualizando memoryDb:', memErr);
+        }
+
+        // Notificar a la UI
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('cloudSync'));
+        }
       }
 
       return true;

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { mockDb, Sede } from '@/lib/supabaseClient';
+import { mockDb, Sede, isMockMode } from '@/lib/supabaseClient';
 import { useSyncQueue } from '@/hooks/useSyncQueue';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -13,7 +13,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sedes, setSedes] = useState<Sede[]>([]);
   const [activeSede, setActiveSede] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [syncStatus, setSyncStatus] = useState<'demo' | 'syncing' | 'synced'>('demo');
+  const [syncStatus, setSyncStatus] = useState<'demo' | 'syncing' | 'synced'>(
+    isMockMode ? 'demo' : 'syncing'
+  );
   const [localDbReady, setLocalDbReady] = useState(false);
 
   const { isOnline, pendingCount, isSyncing, forceSync } = useSyncQueue();
@@ -68,24 +70,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         setSyncStatus('demo');
       } else {
         setSyncStatus('syncing');
-        const success = await syncFromSupabase();
-        if (success) {
-          setSyncStatus('synced');
-          initRealtimeSync(); // Activar escucha en tiempo real
-          // Recargar sedes y sede activa tras sincronización exitosa
-          const freshSedes = mockDb.getSedes();
-          setSedes(freshSedes);
-          
-          const cached = localStorage.getItem('alico_active_sede');
-          if (cached && freshSedes.some(s => s.id === cached)) {
-            setActiveSede(cached);
-          } else if (freshSedes.length > 0) {
-            const def = freshSedes[0].id;
-            setActiveSede(def);
-            localStorage.setItem('alico_active_sede', def);
-          }
-        } else {
-          setSyncStatus('demo'); // Si falla la red, corre en modo local offline
+        // Intentar sincronizar datos iniciales desde Supabase
+        await syncFromSupabase();
+        
+        // Activar canal realtime de WebSocket (se reconectará solo si hay cortes de red)
+        initRealtimeSync();
+        
+        // Dejar el estado en synced (producción) independientemente de si falló el sync inicial,
+        // para que useSyncQueue reporte correctamente el estado 'Offline' y no 'Modo Demo'.
+        setSyncStatus('synced');
+        
+        // Recargar sedes y sede activa tras inicializar la base de datos local
+        const freshSedes = mockDb.getSedes();
+        setSedes(freshSedes);
+        
+        const cached = localStorage.getItem('alico_active_sede');
+        if (cached && freshSedes.some(s => s.id === cached)) {
+          setActiveSede(cached);
+        } else if (freshSedes.length > 0) {
+          const def = freshSedes[0].id;
+          setActiveSede(def);
+          localStorage.setItem('alico_active_sede', def);
         }
       }
     });

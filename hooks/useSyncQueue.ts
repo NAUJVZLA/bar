@@ -32,7 +32,8 @@ export function useSyncQueue() {
       setIsOnline(true);
       setIsSyncing(true);
       try {
-        await syncService.syncPendingQueue();
+        const { syncFromSupabase } = await import('@/lib/supabaseClient');
+        await syncFromSupabase();
       } catch (err) {
         console.error('Fallo en sincronización al reconectar:', err);
       } finally {
@@ -53,6 +54,23 @@ export function useSyncQueue() {
     window.addEventListener('offline', handleOffline);
     window.addEventListener('sync_queue_updated', handleSyncUpdate);
 
+    // Intervalo de auto-reintento periódico en segundo plano
+    const autoRetryInterval = setInterval(async () => {
+      if (navigator.onLine && db) {
+        try {
+          const count = await db.cola_sincronizacion.count();
+          if (count > 0) {
+            console.log(`[Alico Polling] Reintentando sincronizar ${count} cambios pendientes en segundo plano...`);
+            const { syncFromSupabase } = await import('@/lib/supabaseClient');
+            await syncFromSupabase();
+            await updatePendingCount();
+          }
+        } catch (e) {
+          console.error('[Alico Polling] Error en intervalo de auto-reintento:', e);
+        }
+      }
+    }, 15000); // Reintentar cada 15 segundos
+
     // Si detectamos que está online al arrancar, programar una sincronización inicial
     if (navigator.onLine) {
       // Breve retraso para que Next.js se hidrate por completo
@@ -61,6 +79,7 @@ export function useSyncQueue() {
       }, 1500);
       return () => {
         clearTimeout(timer);
+        clearInterval(autoRetryInterval);
         window.removeEventListener('online', handleOnline);
         window.removeEventListener('offline', handleOffline);
         window.removeEventListener('sync_queue_updated', handleSyncUpdate);
@@ -68,6 +87,7 @@ export function useSyncQueue() {
     }
 
     return () => {
+      clearInterval(autoRetryInterval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('sync_queue_updated', handleSyncUpdate);
@@ -78,7 +98,8 @@ export function useSyncQueue() {
     if (typeof window === 'undefined' || !navigator.onLine) return;
     setIsSyncing(true);
     try {
-      await syncService.syncPendingQueue();
+      const { syncFromSupabase } = await import('@/lib/supabaseClient');
+      await syncFromSupabase();
     } catch (err) {
       console.error('Fallo en sincronización manual:', err);
     } finally {
