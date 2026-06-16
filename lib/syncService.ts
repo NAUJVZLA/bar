@@ -82,13 +82,8 @@ class SyncService {
         return true;
       }
 
-      // Caso 2: Inserciones y Actualizaciones (Mapeos y Limpieza de datos)
-      const dataPayload = { ...op.datos };
-      
-      // Limpiamos propiedades que no existan en Supabase (ej: 'creado_en' local, etc. si aplica)
-      if (dataPayload.creado_en) {
-        delete dataPayload.creado_en;
-      }
+      // Caso 2: Inserciones y Actualizaciones (Filtrado de columnas de Supabase)
+      const dataPayload = this.cleanPayloadForSupabase(op.tabla, op.datos);
 
       // Tratamientos específicos por tabla
       if (op.tabla === 'mesas') {
@@ -186,6 +181,47 @@ class SyncService {
       console.error(`❌ [Sync Mesa RPC] Error de red inesperado al ejecutar RPC:`, err);
       return false;
     }
+  }
+
+  /**
+   * Filtra las propiedades del payload para que coincidan exactamente con el esquema de Supabase,
+   * evitando errores de columnas inexistentes (code: 42703).
+   */
+  private cleanPayloadForSupabase(tabla: string, data: any): any {
+    const cleaned: any = {};
+    const tableSchemas: Record<string, string[]> = {
+      sedes: ['id', 'nombre'],
+      productos: ['id', 'sede_id', 'codigo_barras', 'nombre', 'categoria', 'precio_compra', 'precio_venta', 'stock_actual', 'stock_minimo', 'tiene_receta', 'receta'],
+      insumos: ['id', 'sede_id', 'nombre', 'unidad', 'stock_actual', 'stock_minimo', 'costo_unitario'],
+      mesas: ['id', 'sede_id', 'numero_mesa', 'estado', 'cliente_nombre', 'consumos', 'updated_at'],
+      movimientos: ['id', 'sede_id', 'producto_id', 'producto_nombre', 'tipo', 'cantidad', 'motivo', 'registrado_por', 'fecha_hora'],
+      ventas: ['id', 'sede_id', 'cliente_nombre', 'total', 'metodo_pago', 'atendido_por', 'es_directa', 'items', 'estado', 'razon_anulacion', 'fecha_hora'],
+      creditos: ['id', 'sede_id', 'cliente_nombre', 'venta_id', 'total_deuda', 'total_pagado', 'estado', 'fecha_registro', 'fecha_pago', 'registrado_por', 'notas'],
+      prestamos: ['id', 'sede_id', 'cliente_nombre', 'botella_nombre', 'cantidad', 'estado', 'fecha_prestamo', 'fecha_devolucion', 'registrado_por', 'desconto_stock', 'producto_id', 'notas'],
+      cierres: ['id', 'sede_id', 'fecha_hora', 'monto_apertura', 'ventas_efectivo', 'ventas_tarjeta', 'ventas_transferencia', 'ventas_credito', 'ventas_total', 'monto_real', 'descuadre', 'ventas_count', 'registrado_por', 'notas'],
+      auditoria: ['id', 'sede_id', 'usuario', 'accion', 'detalle', 'fecha_hora']
+    };
+
+    const validColumns = tableSchemas[tabla];
+    if (!validColumns) {
+      const { creado_en, updated_at, ...rest } = data;
+      return rest;
+    }
+
+    // Mapeos especiales de nombres de atributos locales -> Supabase
+    const sourceData = { ...data };
+    if (tabla === 'prestamos' && 'descontó_stock' in sourceData) {
+      sourceData.desconto_stock = sourceData.descontó_stock;
+    }
+
+    // Filtrar solo las columnas válidas de la tabla en Supabase
+    for (const key of validColumns) {
+      if (key in sourceData) {
+        cleaned[key] = sourceData[key];
+      }
+    }
+
+    return cleaned;
   }
 
   /**

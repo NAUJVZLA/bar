@@ -101,8 +101,14 @@ export const persistAndSync = async (
       }
     });
     
-    if (!isMockMode && navigator.onLine) {
-      syncService.syncPendingQueue();
+    if (!isMockMode) {
+      if (navigator.onLine) {
+        syncService.syncPendingQueue();
+      } else {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('sync_queue_updated'));
+        }
+      }
     }
   } catch (err: any) {
     console.error(`❌ [Alico Offline] Error guardando cambio en IndexedDB para la tabla ${tabla}:`, err);
@@ -501,7 +507,7 @@ export const syncTableToSupabase = async (table: keyof MockDataStore) => {
       let payload = data;
       if (table === 'productos') {
         payload = (data as Producto[]).map(({ registrado_por, ...rest }: any) => {
-          const { creado_en, ...finalRest } = rest;
+          const { creado_en, updated_at, ...finalRest } = rest;
           return finalRest;
         }) as any;
       } else if (table === 'prestamos') {
@@ -544,7 +550,7 @@ export const syncTableToSupabase = async (table: keyof MockDataStore) => {
         })) as any;
       } else {
         payload = (data as any[]).map((p: any) => {
-          const { creado_en, ...rest } = p;
+          const { creado_en, updated_at, ...rest } = p;
           return rest;
         }) as any;
       }
