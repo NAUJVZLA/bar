@@ -1,4 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { db } from './db';
+import { syncService } from './syncService';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -14,6 +16,99 @@ if (isMockMode) {
 export const supabase: SupabaseClient | null = !isMockMode 
   ? createClient(supabaseUrl, supabaseAnonKey) 
   : null;
+
+// ==========================================
+// OFFLINE-FIRST HELPERS
+// ==========================================
+export let isDbInitialized = false;
+let dbInitializationPromise: Promise<void> | null = null;
+
+export const ensureDbInitialized = async () => {
+  if (isDbInitialized) return;
+  if (!dbInitializationPromise) {
+    dbInitializationPromise = (async () => {
+      if (typeof window !== 'undefined' && db) {
+        try {
+          const sedes = await db.sedes.toArray();
+          const insumos = await db.insumos.toArray();
+          const productos = await db.productos.toArray();
+          const mesas = await db.mesas.toArray();
+          const movimientos = await db.movimientos.toArray();
+          const ventas = await db.ventas.toArray();
+          const creditos = await db.creditos.toArray();
+          const prestamos = await db.prestamos.toArray();
+          const cierres = await db.cierres.toArray();
+          const auditoria = await db.auditoria.toArray();
+          
+          if (sedes.length > 0) memoryDb.sedes = sedes;
+          if (insumos.length > 0) memoryDb.insumos = insumos;
+          if (productos.length > 0) memoryDb.productos = productos;
+          if (mesas.length > 0) memoryDb.mesas = mesas;
+          if (movimientos.length > 0) memoryDb.movimientos = movimientos;
+          if (ventas.length > 0) memoryDb.ventas = ventas;
+          if (creditos.length > 0) memoryDb.creditos = creditos;
+          if (prestamos.length > 0) memoryDb.prestamos = prestamos;
+          if (cierres.length > 0) memoryDb.cierres = cierres;
+          if (auditoria.length > 0) memoryDb.auditoria = auditoria;
+          
+          const uniqueCats = Array.from(new Set([
+            'Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios',
+            ...memoryDb.productos.map(p => p.categoria)
+          ]));
+          categories.splice(0, categories.length, ...uniqueCats);
+        } catch (e) {
+          console.error("❌ [Alico Offline] Error inicializando IndexedDB:", e);
+        }
+      }
+      isDbInitialized = true;
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('local_db_loaded'));
+      }
+    })();
+  }
+  await dbInitializationPromise;
+};
+
+export const persistAndSync = async (
+  tabla: 'sedes' | 'insumos' | 'productos' | 'mesas' | 'movimientos' | 'ventas' | 'creditos' | 'prestamos' | 'cierres' | 'auditoria',
+  registroId: string,
+  tipoOperacion: 'INSERT' | 'UPDATE' | 'DELETE',
+  datos: any
+) => {
+  if (typeof window === 'undefined' || !db) return;
+  
+  try {
+    await db.transaction('rw', [db[tabla], db.cola_sincronizacion], async () => {
+      if (tipoOperacion === 'DELETE') {
+        await db[tabla].delete(registroId);
+      } else {
+        const datosConTimestamp = {
+          ...datos,
+          updated_at: datos.updated_at || new Date().toISOString()
+        };
+        await db[tabla].put(datosConTimestamp);
+      }
+      
+      if (!isMockMode) {
+        await db.cola_sincronizacion.add({
+          tabla,
+          registro_id: registroId,
+          tipo_operacion: tipoOperacion,
+          datos: datos,
+          creado_en: Date.now(),
+          reintentos: 0
+        });
+      }
+    });
+    
+    if (!isMockMode && navigator.onLine) {
+      syncService.syncPendingQueue();
+    }
+  } catch (err) {
+    console.error(`❌ [Alico Offline] Error guardando cambio en IndexedDB para la tabla ${tabla}:`, err);
+  }
+};
+
 
 // ==========================================
 // MOCK STATE TYPES & INTERFACES
@@ -378,6 +473,9 @@ export const initializeDb = () => {
     memoryDb.cierres = [];
     memoryDb.auditoria = [];
   }
+
+  // Disparar carga asíncrona de IndexedDB a RAM
+  ensureDbInitialized();
 };
 
 if (typeof window !== 'undefined') {
@@ -595,6 +693,40 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     memoryDb.cierres = parsedCierres;
     memoryDb.auditoria = parsedAuditoria;
 
+    // Actualizar base de datos local (IndexedDB) como caché offline
+    if (typeof window !== 'undefined' && db) {
+      try {
+        await db.transaction('rw', [
+          db.sedes, db.insumos, db.productos, db.mesas,
+          db.movimientos, db.ventas, db.creditos, db.prestamos, db.cierres, db.auditoria
+        ], async () => {
+          await db.sedes.clear();
+          await db.sedes.bulkAdd(sedesRes.data || []);
+          await db.insumos.clear();
+          await db.insumos.bulkAdd(parsedInsumos);
+          await db.productos.clear();
+          await db.productos.bulkAdd(parsedProductos);
+          await db.mesas.clear();
+          await db.mesas.bulkAdd(parsedMesas);
+          await db.movimientos.clear();
+          await db.movimientos.bulkAdd(parsedMovimientos);
+          await db.ventas.clear();
+          await db.ventas.bulkAdd(parsedVentas);
+          await db.creditos.clear();
+          await db.creditos.bulkAdd(parsedCreditos);
+          await db.prestamos.clear();
+          await db.prestamos.bulkAdd(parsedPrestamos);
+          await db.cierres.clear();
+          await db.cierres.bulkAdd(parsedCierres);
+          await db.auditoria.clear();
+          await db.auditoria.bulkAdd(parsedAuditoria);
+        });
+        console.log('📦 [Alico Sync] Datos de Supabase guardados localmente en IndexedDB.');
+      } catch (dbErr) {
+        console.error('⚠️ [Alico Sync] Error guardando caché en IndexedDB:', dbErr);
+      }
+    }
+
     // Derivar categorías de productos de forma dinámica
     const uniqueCats = Array.from(new Set([
       'Cervezas', 'Licores', 'Vinos', 'Gaseosas', 'Comidas', 'Varios',
@@ -724,13 +856,7 @@ export const mockDb = {
     const newSede: Sede = { id: newId, ...sede };
     memoryDb.sedes.push(newSede);
     
-    if (isMockMode) {
-      saveMockData({ sedes: memoryDb.sedes });
-    } else {
-      runAsyncSupabase(async () => {
-        await supabase!.from('sedes').insert(newSede);
-      });
-    }
+    persistAndSync('sedes', newId, 'INSERT', newSede);
     return newSede;
   },
 
@@ -741,6 +867,7 @@ export const mockDb = {
   },
   saveInsumo: (insumo: Partial<Insumo> & { sede_id: string; nombre: string; stock_actual: number; unidad: string }): Insumo => {
     let result: Insumo;
+    let isNew = false;
     if (insumo.id) {
       const idx = memoryDb.insumos.findIndex(i => i.id === insumo.id);
       if (idx !== -1) {
@@ -750,6 +877,7 @@ export const mockDb = {
         throw new Error('Insumo no encontrado');
       }
     } else {
+      isNew = true;
       const newId = 'i-' + Date.now();
       const newInsumo: Insumo = { 
         id: newId, 
@@ -764,14 +892,8 @@ export const mockDb = {
       result = newInsumo;
     }
     
-    if (isMockMode) {
-      saveMockData({ insumos: memoryDb.insumos });
-    } else {
-      runAsyncSupabase(async () => {
-        const { creado_en, ...payload } = result as any;
-        await supabase!.from('insumos').upsert(payload);
-      });
-    }
+    const { creado_en, ...payload } = result as any;
+    persistAndSync('insumos', result.id, isNew ? 'INSERT' : 'UPDATE', payload);
     return result;
   },
   deleteInsumo: (id: string, usuario?: string): boolean => {
@@ -780,13 +902,7 @@ export const mockDb = {
     const SedeId = ins ? ins.sede_id : 'sede-norte';
     
     memoryDb.insumos = memoryDb.insumos.filter(i => i.id !== id);
-    if (isMockMode) {
-      saveMockData({ insumos: memoryDb.insumos });
-    } else {
-      runAsyncSupabase(async () => {
-        await supabase!.from('insumos').delete().eq('id', id);
-      });
-    }
+    persistAndSync('insumos', id, 'DELETE', null);
     
     mockDb.registrarAuditLog(
       SedeId,
@@ -863,17 +979,10 @@ export const mockDb = {
       result = newProd;
     }
     
-    if (isMockMode) {
-      saveMockData({ productos: memoryDb.productos, movimientos: memoryDb.movimientos });
-    } else {
-      runAsyncSupabase(async () => {
-        const { registrado_por, creado_en, ...prodPayload } = result as any;
-        await supabase!.from('productos').upsert(prodPayload);
-        if (newMovement) {
-          const { creado_en: movC, ...movPayload } = newMovement as any;
-          await supabase!.from('movimientos').insert(movPayload);
-        }
-      });
+    const { registrado_por, creado_en, ...prodPayload } = result as any;
+    persistAndSync('productos', result.id, prod.id ? 'UPDATE' : 'INSERT', prodPayload);
+    if (newMovement) {
+      persistAndSync('movimientos', newMovement.id, 'INSERT', newMovement);
     }
     return result;
   },
@@ -883,13 +992,7 @@ export const mockDb = {
     const SedeId = prod ? prod.sede_id : 'sede-norte';
     
     memoryDb.productos = memoryDb.productos.filter(p => p.id !== id);
-    if (isMockMode) {
-      saveMockData({ productos: memoryDb.productos });
-    } else {
-      runAsyncSupabase(async () => {
-        await supabase!.from('productos').delete().eq('id', id);
-      });
-    }
+    persistAndSync('productos', id, 'DELETE', null);
     
     mockDb.registrarAuditLog(
       SedeId,
@@ -918,14 +1021,8 @@ export const mockDb = {
         mesa.cliente_nombre = nuevaMesa.cliente_nombre || mesa.cliente_nombre;
       }
       
-      if (isMockMode) {
-        saveMockData({ mesas: memoryDb.mesas });
-      } else {
-        runAsyncSupabase(async () => {
-          const { creado_en, ...payload } = mesa as any;
-          await supabase!.from('mesas').upsert(payload);
-        });
-      }
+      const { creado_en, ...payload } = mesa as any;
+      persistAndSync('mesas', mesa.id, 'UPDATE', payload);
       return mesa;
     }
     return null;
@@ -967,27 +1064,30 @@ export const mockDb = {
       mesa.cliente_nombre = '';
       mesa.consumos = [];
       
-      if (isMockMode) {
-        saveMockData({ mesas: memoryDb.mesas, productos: memoryDb.productos, insumos: memoryDb.insumos, movimientos: memoryDb.movimientos });
-      } else {
-        runAsyncSupabase(async () => {
-          const { creado_en, ...payload } = mesa as any;
-          await supabase!.from('mesas').upsert(payload);
+      const { creado_en, ...payload } = mesa as any;
+      persistAndSync('mesas', mesa.id, 'UPDATE', payload);
+      
+      mesa.consumos.forEach(cons => {
+        const prodActual = memoryDb.productos.find(p => p.id === cons.producto_id);
+        if (prodActual) {
+          const { registrado_por, creado_en: pC, ...prodPayload } = prodActual as any;
+          persistAndSync('productos', prodActual.id, 'UPDATE', prodPayload);
           
-          for (const prod of memoryDb.productos) {
-            const { registrado_por, creado_en: pC, ...prodPayload } = prod as any;
-            await supabase!.from('productos').upsert(prodPayload);
+          if (prodActual.tiene_receta && prodActual.receta) {
+            prodActual.receta.forEach(itemRec => {
+              const ins = memoryDb.insumos.find(i => i.id === itemRec.insumo_id);
+              if (ins) {
+                const { creado_en: iC, ...insPayload } = ins as any;
+                persistAndSync('insumos', ins.id, 'UPDATE', insPayload);
+              }
+            });
           }
-          for (const ins of memoryDb.insumos) {
-            const { creado_en: iC, ...insPayload } = ins as any;
-            await supabase!.from('insumos').upsert(insPayload);
-          }
-          for (const mov of newMovements) {
-            const { creado_en: mC, ...movPayload } = mov as any;
-            await supabase!.from('movimientos').insert(movPayload);
-          }
-        });
-      }
+        }
+      });
+      
+      newMovements.forEach(mov => {
+        persistAndSync('movimientos', mov.id, 'INSERT', mov);
+      });
       return mesa;
     }
     return null;
@@ -1069,33 +1169,27 @@ export const mockDb = {
       }
       mesa.estado = 'OCUPADA';
       
-      if (isMockMode) {
-        saveMockData({ mesas: memoryDb.mesas, productos: memoryDb.productos, movimientos: memoryDb.movimientos, insumos: memoryDb.insumos });
-      } else {
-        runAsyncSupabase(async () => {
-          const { creado_en, ...payload } = mesa as any;
-          await supabase!.from('mesas').upsert(payload);
-          
-          if (prodIdx !== -1) {
-            const prodActual = memoryDb.productos[prodIdx];
-            const { registrado_por, creado_en: pC, ...prodPayload } = prodActual as any;
-            await supabase!.from('productos').upsert(prodPayload);
-            
-            if (prodActual.tiene_receta && prodActual.receta) {
-              for (const itemRec of prodActual.receta) {
-                const ins = memoryDb.insumos.find(i => i.id === itemRec.insumo_id);
-                if (ins) {
-                  const { creado_en: iC, ...insPayload } = ins as any;
-                  await supabase!.from('insumos').upsert(insPayload);
-                }
-              }
+      const { creado_en, ...payload } = mesa as any;
+      persistAndSync('mesas', mesa.id, 'UPDATE', payload);
+      
+      if (prodIdx !== -1) {
+        const prodActual = memoryDb.productos[prodIdx];
+        const { registrado_por, creado_en: pC, ...prodPayload } = prodActual as any;
+        persistAndSync('productos', prodActual.id, 'UPDATE', prodPayload);
+        
+        if (prodActual.tiene_receta && prodActual.receta) {
+          prodActual.receta.forEach(itemRec => {
+            const ins = memoryDb.insumos.find(i => i.id === itemRec.insumo_id);
+            if (ins) {
+              const { creado_en: iC, ...insPayload } = ins as any;
+              persistAndSync('insumos', ins.id, 'UPDATE', insPayload);
             }
-          }
-          if (newMovement) {
-            const { creado_en: mC, ...movPayload } = newMovement as any;
-            await supabase!.from('movimientos').insert(movPayload);
-          }
-        });
+          });
+        }
+      }
+      
+      if (newMovement) {
+        persistAndSync('movimientos', newMovement.id, 'INSERT', newMovement);
       }
       return mesa;
     }
@@ -1140,33 +1234,27 @@ export const mockDb = {
           mesa.cliente_nombre = '';
         }
         
-        if (isMockMode) {
-          saveMockData({ mesas: memoryDb.mesas, productos: memoryDb.productos, movimientos: memoryDb.movimientos, insumos: memoryDb.insumos });
-        } else {
-          runAsyncSupabase(async () => {
-            const { creado_en, ...payload } = mesa as any;
-            await supabase!.from('mesas').upsert(payload);
-            
-            if (prodIdx !== -1) {
-              const prodActual = memoryDb.productos[prodIdx];
-              const { registrado_por, creado_en: pC, ...prodPayload } = prodActual as any;
-              await supabase!.from('productos').upsert(prodPayload);
-              
-              if (prodActual.tiene_receta && prodActual.receta) {
-                for (const itemRec of prodActual.receta) {
-                  const ins = memoryDb.insumos.find(i => i.id === itemRec.insumo_id);
-                  if (ins) {
-                    const { creado_en: iC, ...insPayload } = ins as any;
-                    await supabase!.from('insumos').upsert(insPayload);
-                  }
-                }
+        const { creado_en, ...payload } = mesa as any;
+        persistAndSync('mesas', mesa.id, 'UPDATE', payload);
+        
+        if (prodIdx !== -1) {
+          const prodActual = memoryDb.productos[prodIdx];
+          const { registrado_por, creado_en: pC, ...prodPayload } = prodActual as any;
+          persistAndSync('productos', prodActual.id, 'UPDATE', prodPayload);
+          
+          if (prodActual.tiene_receta && prodActual.receta) {
+            prodActual.receta.forEach(itemRec => {
+              const ins = memoryDb.insumos.find(i => i.id === itemRec.insumo_id);
+              if (ins) {
+                const { creado_en: iC, ...insPayload } = ins as any;
+                persistAndSync('insumos', ins.id, 'UPDATE', insPayload);
               }
-            }
-            if (newMovement) {
-              const { creado_en: mC, ...movPayload } = newMovement as any;
-              await supabase!.from('movimientos').insert(movPayload);
-            }
-          });
+            });
+          }
+        }
+        
+        if (newMovement) {
+          persistAndSync('movimientos', newMovement.id, 'INSERT', newMovement);
         }
         return mesa;
       }
@@ -1282,39 +1370,26 @@ export const mockDb = {
 
     memoryDb.ventas.unshift(newVenta);
     
-    if (isMockMode) {
-      saveMockData({ 
-        ventas: memoryDb.ventas, 
-        productos: memoryDb.productos, 
-        movimientos: memoryDb.movimientos, 
-        insumos: memoryDb.insumos, 
-        creditos: memoryDb.creditos 
-      });
-    } else {
-      runAsyncSupabase(async () => {
-        const { creado_en, ...ventaPayload } = newVenta as any;
-        await supabase!.from('ventas').insert(ventaPayload);
+    const { creado_en, ...ventaPayload } = newVenta as any;
+    persistAndSync('ventas', newVenta.id, 'INSERT', ventaPayload);
 
-        for (const prod of updatedProds) {
-          const { registrado_por, creado_en: pC, ...prodPayload } = prod as any;
-          await supabase!.from('productos').upsert(prodPayload);
-        }
+    for (const prod of updatedProds) {
+      const { registrado_por, creado_en: pC, ...prodPayload } = prod as any;
+      persistAndSync('productos', prod.id, 'UPDATE', prodPayload);
+    }
 
-        for (const ins of updatedInsumos) {
-          const { creado_en: iC, ...insPayload } = ins as any;
-          await supabase!.from('insumos').upsert(insPayload);
-        }
+    for (const ins of updatedInsumos) {
+      const { creado_en: iC, ...insPayload } = ins as any;
+      persistAndSync('insumos', ins.id, 'UPDATE', insPayload);
+    }
 
-        for (const mov of newMovs) {
-          const { creado_en: mC, ...movPayload } = mov as any;
-          await supabase!.from('movimientos').insert(movPayload);
-        }
+    for (const mov of newMovs) {
+      persistAndSync('movimientos', mov.id, 'INSERT', mov);
+    }
 
-        if (newCredito) {
-          const { creado_en: crC, ...credPayload } = newCredito as any;
-          await supabase!.from('creditos').insert(credPayload);
-        }
-      });
+    if (newCredito) {
+      const { creado_en: crC, ...credPayload } = newCredito as any;
+      persistAndSync('creditos', newCredito.id, 'INSERT', credPayload);
     }
     return newVenta;
   },
@@ -1363,35 +1438,32 @@ export const mockDb = {
       venta.estado = 'ANULADA';
       venta.razon_anulacion = razonAnulacion;
       
-      if (isMockMode) {
-        saveMockData({ 
-          ventas: memoryDb.ventas, 
-          productos: memoryDb.productos, 
-          movimientos: memoryDb.movimientos, 
-          insumos: memoryDb.insumos 
-        });
-      } else {
-        runAsyncSupabase(async () => {
-          await supabase!.from('ventas').update({
-            estado: 'ANULADA',
-            razon_anulacion: razonAnulacion
-          }).eq('id', ventaId);
+      persistAndSync('ventas', ventaId, 'UPDATE', {
+        id: venta.id,
+        sede_id: venta.sede_id,
+        cliente_nombre: venta.cliente_nombre,
+        total: venta.total,
+        metodo_pago: venta.metodo_pago,
+        atendido_por: venta.atendido_por,
+        es_directa: venta.es_directa,
+        items: venta.items,
+        estado: 'ANULADA',
+        razon_anulacion: razonAnulacion,
+        fecha_hora: venta.fecha_hora
+      });
 
-          for (const prod of updatedProds) {
-            const { registrado_por, creado_en: pC, ...prodPayload } = prod as any;
-            await supabase!.from('productos').upsert(prodPayload);
-          }
+      for (const prod of updatedProds) {
+        const { registrado_por, creado_en: pC, ...prodPayload } = prod as any;
+        persistAndSync('productos', prod.id, 'UPDATE', prodPayload);
+      }
 
-          for (const ins of updatedInsumos) {
-            const { creado_en: iC, ...insPayload } = ins as any;
-            await supabase!.from('insumos').upsert(insPayload);
-          }
+      for (const ins of updatedInsumos) {
+        const { creado_en: iC, ...insPayload } = ins as any;
+        persistAndSync('insumos', ins.id, 'UPDATE', insPayload);
+      }
 
-          for (const mov of newMovs) {
-            const { creado_en: mC, ...movPayload } = mov as any;
-            await supabase!.from('movimientos').insert(movPayload);
-          }
-        });
+      for (const mov of newMovs) {
+        persistAndSync('movimientos', mov.id, 'INSERT', mov);
       }
       
       mockDb.registrarAuditLog(
@@ -1421,14 +1493,8 @@ export const mockDb = {
     };
     memoryDb.creditos.unshift(newCredito);
     
-    if (isMockMode) {
-      saveMockData({ creditos: memoryDb.creditos });
-    } else {
-      runAsyncSupabase(async () => {
-        const { creado_en, ...payload } = newCredito as any;
-        await supabase!.from('creditos').insert(payload);
-      });
-    }
+    const { creado_en, ...payload } = newCredito as any;
+    persistAndSync('creditos', newCredito.id, 'INSERT', payload);
     return newCredito;
   },
   registrarAbonoCredito: (creditoId: string, montoAbono: number): CreditoCliente | null => {
@@ -1442,17 +1508,19 @@ export const mockDb = {
         cred.fecha_pago = new Date().toISOString();
       }
       
-      if (isMockMode) {
-        saveMockData({ creditos: memoryDb.creditos });
-      } else {
-        runAsyncSupabase(async () => {
-          await supabase!.from('creditos').update({
-            total_pagado: cred.total_pagado,
-            estado: cred.estado,
-            fecha_pago: cred.fecha_pago || null
-          }).eq('id', creditoId);
-        });
-      }
+      persistAndSync('creditos', creditoId, 'UPDATE', {
+        id: cred.id,
+        sede_id: cred.sede_id,
+        cliente_nombre: cred.cliente_nombre,
+        venta_id: cred.venta_id || null,
+        total_deuda: cred.total_deuda,
+        total_pagado: cred.total_pagado,
+        estado: cred.estado,
+        fecha_registro: cred.fecha_registro,
+        fecha_pago: cred.fecha_pago || null,
+        registrado_por: cred.registrado_por,
+        notas: cred.notas || null
+      });
       return cred;
     }
     return null;
@@ -1501,26 +1569,19 @@ export const mockDb = {
 
     memoryDb.prestamos.unshift(newPrestamo);
     
-    if (isMockMode) {
-      saveMockData({ prestamos: memoryDb.prestamos, productos: memoryDb.productos, movimientos: memoryDb.movimientos });
-    } else {
-      runAsyncSupabase(async () => {
-        const { descontó_stock, creado_en, ...payload } = newPrestamo as any;
-        await supabase!.from('prestamos').insert({
-          ...payload,
-          desconto_stock: descontó_stock ?? false
-        });
-        
-        if (prodActual) {
-          const { registrado_por, creado_en: prodC, ...prodPayload } = prodActual as any;
-          await supabase!.from('productos').upsert(prodPayload);
-        }
-        
-        if (newMovement) {
-          const { creado_en: movC, ...movPayload } = newMovement as any;
-          await supabase!.from('movimientos').insert(movPayload);
-        }
-      });
+    const { descontó_stock, creado_en, ...payload } = newPrestamo as any;
+    persistAndSync('prestamos', newPrestamo.id, 'INSERT', {
+      ...payload,
+      desconto_stock: descontó_stock ?? false
+    });
+    
+    if (prodActual) {
+      const { registrado_por, creado_en: prodC, ...prodPayload } = prodActual as any;
+      persistAndSync('productos', prodActual.id, 'UPDATE', prodPayload);
+    }
+    
+    if (newMovement) {
+      persistAndSync('movimientos', newMovement.id, 'INSERT', newMovement);
     }
     return newPrestamo;
   },
@@ -1555,25 +1616,28 @@ export const mockDb = {
         }
       }
 
-      if (isMockMode) {
-        saveMockData({ prestamos: memoryDb.prestamos, productos: memoryDb.productos, movimientos: memoryDb.movimientos });
-      } else {
-        runAsyncSupabase(async () => {
-          await supabase!.from('prestamos').update({
-            estado: 'DEVUELTO',
-            fecha_devolucion: prestamo.fecha_devolucion
-          }).eq('id', prestamoId);
-          
-          if (prodActual) {
-            const { registrado_por, creado_en: prodC, ...prodPayload } = prodActual as any;
-            await supabase!.from('productos').upsert(prodPayload);
-          }
-          
-          if (newMovement) {
-            const { creado_en: movC, ...movPayload } = newMovement as any;
-            await supabase!.from('movimientos').insert(movPayload);
-          }
-        });
+      persistAndSync('prestamos', prestamoId, 'UPDATE', {
+        id: prestamo.id,
+        sede_id: prestamo.sede_id,
+        cliente_nombre: prestamo.cliente_nombre,
+        botella_nombre: prestamo.botella_nombre,
+        cantidad: prestamo.cantidad,
+        estado: 'DEVUELTO',
+        fecha_prestamo: prestamo.fecha_prestamo,
+        fecha_devolucion: prestamo.fecha_devolucion,
+        registrado_por: prestamo.registrado_por,
+        desconto_stock: prestamo.descontó_stock || false,
+        producto_id: prestamo.producto_id || null,
+        notas: prestamo.notas || null
+      });
+      
+      if (prodActual) {
+        const { registrado_por, creado_en: prodC, ...prodPayload } = prodActual as any;
+        persistAndSync('productos', prodActual.id, 'UPDATE', prodPayload);
+      }
+      
+      if (newMovement) {
+        persistAndSync('movimientos', newMovement.id, 'INSERT', newMovement);
       }
       return prestamo;
     }
@@ -1586,14 +1650,7 @@ export const mockDb = {
     
     memoryDb.prestamos = memoryDb.prestamos.filter(p => p.id !== prestamoId);
     
-    if (isMockMode) {
-      saveMockData({ prestamos: memoryDb.prestamos });
-      deleteFromSupabase('prestamos', prestamoId);
-    } else {
-      runAsyncSupabase(async () => {
-        await supabase!.from('prestamos').delete().eq('id', prestamoId);
-      });
-    }
+    persistAndSync('prestamos', prestamoId, 'DELETE', null);
     
     mockDb.registrarAuditLog(
       SedeId,
@@ -1610,12 +1667,8 @@ export const mockDb = {
     const cantidad = devueltosSede.reduce((sum, p) => sum + p.cantidad, 0);
     memoryDb.prestamos = memoryDb.prestamos.filter(p => !(p.sede_id === sedeId && p.estado === 'DEVUELTO'));
     
-    if (isMockMode) {
-      saveMockData({ prestamos: memoryDb.prestamos });
-    }
-    
-    runAsyncSupabase(async () => {
-      await supabase!.from('prestamos').delete().eq('sede_id', sedeId).eq('estado', 'DEVUELTO');
+    devueltosSede.forEach(p => {
+      persistAndSync('prestamos', p.id, 'DELETE', null);
     });
     
     mockDb.registrarAuditLog(
@@ -1633,12 +1686,8 @@ export const mockDb = {
     const montoTotal = pagadosSede.reduce((sum, c) => sum + c.total_deuda, 0);
     memoryDb.creditos = memoryDb.creditos.filter(c => !(c.sede_id === sedeId && c.estado === 'PAGADO'));
     
-    if (isMockMode) {
-      saveMockData({ creditos: memoryDb.creditos });
-    }
-    
-    runAsyncSupabase(async () => {
-      await supabase!.from('creditos').delete().eq('sede_id', sedeId).eq('estado', 'PAGADO');
+    pagadosSede.forEach(c => {
+      persistAndSync('creditos', c.id, 'DELETE', null);
     });
     
     mockDb.registrarAuditLog(
@@ -1663,14 +1712,8 @@ export const mockDb = {
     };
     memoryDb.cierres.unshift(newCierre);
     
-    if (isMockMode) {
-      saveMockData({ cierres: memoryDb.cierres });
-    } else {
-      runAsyncSupabase(async () => {
-        const { creado_en, ...payload } = newCierre as any;
-        await supabase!.from('cierres').insert(payload);
-      });
-    }
+    const { creado_en, ...payload } = newCierre as any;
+    persistAndSync('cierres', newCierre.id, 'INSERT', payload);
     return newCierre;
   },
 
@@ -1687,20 +1730,8 @@ export const mockDb = {
     memoryDb.auditoria = memoryDb.auditoria || [];
     memoryDb.auditoria.unshift(newLog);
     
-    if (isMockMode) {
-      saveMockData({ auditoria: memoryDb.auditoria });
-    } else {
-      (async () => {
-        try {
-          if (supabase) {
-            const { creado_en, ...payload } = newLog as any;
-            await supabase.from('auditoria').insert(payload);
-          }
-        } catch (e) {
-          console.warn('⚠️ [Alico Supabase] La tabla auditoria no existe. Registrado en memoria.');
-        }
-      })();
-    }
+    const { creado_en, ...payload } = newLog as any;
+    persistAndSync('auditoria', newLog.id, 'INSERT', payload);
     return newLog;
   },
   getAuditLogs: (sedeId?: string): AuditLog[] => {

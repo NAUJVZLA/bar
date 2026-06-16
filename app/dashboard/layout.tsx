@@ -13,6 +13,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [activeSede, setActiveSede] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [syncStatus, setSyncStatus] = useState<'demo' | 'syncing' | 'synced'>('demo');
+  const [localDbReady, setLocalDbReady] = useState(false);
 
   useEffect(() => {
     // 1. Guard de Sesión
@@ -55,7 +56,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     // 4. Inicializar Motor de Sincronización Supabase Cloud (Offline-First Cache)
-    import('@/lib/supabaseClient').then(async ({ isMockMode, syncFromSupabase, initRealtimeSync }) => {
+    import('@/lib/supabaseClient').then(async ({ isMockMode, syncFromSupabase, initRealtimeSync, ensureDbInitialized }) => {
+      // Garantizar que la base de datos IndexedDB local cargó antes de renderizar la UI
+      await ensureDbInitialized();
+      setLocalDbReady(true);
+
       if (isMockMode) {
         setSyncStatus('demo');
       } else {
@@ -380,7 +385,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* WORKSPACE CONTENT AREA */}
         <main className="flex-1 p-4 md:p-8 overflow-y-auto max-w-7xl w-full mx-auto">
-          {children}
+          {localDbReady ? (
+            children
+          ) : (
+            <div className="flex h-full w-full items-center justify-center min-h-[300px]">
+              <div className="flex flex-col items-center gap-4 text-center animate-pulse">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-amber-500/20 border-t-amber-500"></div>
+                <p className="text-xs font-semibold tracking-wide text-zinc-500">
+                  Cargando base de datos local offline...
+                </p>
+              </div>
+            </div>
+          )}
         </main>
 
       </div>
