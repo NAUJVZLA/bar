@@ -16,6 +16,10 @@ export function useSyncQueue() {
     code: string;
     message: string;
   } | null>(null);
+  const [dbError, setDbError] = useState<{
+    tabla: string;
+    message: string;
+  } | null>(null);
 
   // Consulta el conteo actual de operaciones en la cola
   const updatePendingCount = async () => {
@@ -38,6 +42,7 @@ export function useSyncQueue() {
       setIsOnline(true);
       setIsSyncing(true);
       setSyncError(null);
+      setDbError(null);
       try {
         const { syncFromSupabase } = await import('@/lib/supabaseClient');
         await syncFromSupabase();
@@ -64,10 +69,18 @@ export function useSyncQueue() {
       }
     };
 
+    const handleDbError = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail) {
+        setDbError(customEvent.detail);
+      }
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     window.addEventListener('sync_queue_updated', handleSyncUpdate);
     window.addEventListener('sync_error_occurred', handleSyncError);
+    window.addEventListener('db_error_occurred', handleDbError);
 
     // Intervalo de auto-reintento periódico en segundo plano
     const autoRetryInterval = setInterval(async () => {
@@ -94,20 +107,22 @@ export function useSyncQueue() {
       }, 1500);
       return () => {
         clearTimeout(timer);
-        clearInterval(autoRetryInterval);
+        autoRetryInterval && clearInterval(autoRetryInterval);
         window.removeEventListener('online', handleOnline);
         window.removeEventListener('offline', handleOffline);
         window.removeEventListener('sync_queue_updated', handleSyncUpdate);
         window.removeEventListener('sync_error_occurred', handleSyncError);
+        window.removeEventListener('db_error_occurred', handleDbError);
       };
     }
 
     return () => {
-      clearInterval(autoRetryInterval);
+      autoRetryInterval && clearInterval(autoRetryInterval);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('sync_queue_updated', handleSyncUpdate);
       window.removeEventListener('sync_error_occurred', handleSyncError);
+      window.removeEventListener('db_error_occurred', handleDbError);
     };
   }, []);
 
@@ -115,6 +130,7 @@ export function useSyncQueue() {
     if (typeof window === 'undefined' || !navigator.onLine) return;
     setIsSyncing(true);
     setSyncError(null);
+    setDbError(null);
     try {
       const { syncFromSupabase } = await import('@/lib/supabaseClient');
       await syncFromSupabase();
@@ -132,5 +148,6 @@ export function useSyncQueue() {
     isSyncing,
     forceSync,
     syncError,
+    dbError,
   };
 }

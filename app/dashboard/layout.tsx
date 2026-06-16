@@ -18,7 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
   const [localDbReady, setLocalDbReady] = useState(false);
 
-  const { isOnline, pendingCount, isSyncing, forceSync, syncError } = useSyncQueue();
+  const { isOnline, pendingCount, isSyncing, forceSync, syncError, dbError } = useSyncQueue();
 
   useEffect(() => {
     // 1. Guard de Sesión
@@ -241,6 +241,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="p-2 bg-red-950/20 border border-red-500/20 text-red-400 rounded-lg text-[9px] font-semibold leading-normal max-w-[220px]">
                     <p className="font-extrabold text-red-300">Error en {syncError.tabla} ({syncError.tipo_operacion}):</p>
                     <p className="mt-0.5 text-[8.5px] opacity-90 break-words">{syncError.message} (Cód: {syncError.code})</p>
+                  </div>
+                )}
+                {dbError && (
+                  <div className="p-2 bg-red-950/20 border border-red-500/20 text-red-300 rounded-lg text-[9px] font-semibold leading-normal max-w-[220px]">
+                    <p className="font-extrabold text-red-200">Error DB Local ({dbError.tabla}):</p>
+                    <p className="mt-0.5 text-[8.5px] opacity-90 break-words">{dbError.message}</p>
                   </div>
                 )}
               </div>

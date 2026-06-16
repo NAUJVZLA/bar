@@ -104,8 +104,16 @@ export const persistAndSync = async (
     if (!isMockMode && navigator.onLine) {
       syncService.syncPendingQueue();
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error(`❌ [Alico Offline] Error guardando cambio en IndexedDB para la tabla ${tabla}:`, err);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('db_error_occurred', {
+        detail: {
+          tabla,
+          message: err.message || JSON.stringify(err)
+        }
+      }));
+    }
   }
 };
 

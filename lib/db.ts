@@ -57,7 +57,7 @@ class GastrobarDatabase extends Dexie {
     
     // Configura el esquema de IndexedDB.
     // Solo indexamos los campos críticos para búsquedas de clave primaria o filtrados rápidos.
-    this.version(1).stores({
+    this.version(2).stores({
       sedes: 'id',
       insumos: 'id, sede_id',
       productos: 'id, sede_id, categoria, codigo_barras',
