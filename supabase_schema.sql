@@ -320,7 +320,7 @@ BEGIN
         estado = v_nuevo_estado,
         cliente_nombre = v_nuevo_cliente,
         consumos = COALESCE(v_consumo_fusionado, '[]'::jsonb),
-        updated_at = GREATEST(v_mesa_nube.updated_at, p_updated_at, now())
+        updated_at = GREATEST(v_mesa_nube.updated_at, p_updated_at)
     WHERE id = p_mesa_id;
 
     RETURN QUERY SELECT * FROM mesas WHERE id = p_mesa_id;
