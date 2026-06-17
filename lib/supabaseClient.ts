@@ -79,14 +79,28 @@ export const persistAndSync = async (
   
   try {
     await db.transaction('rw', [db[tabla], db.cola_sincronizacion], async () => {
+      let datosAGuardar = datos;
+      
       if (tipoOperacion === 'DELETE') {
         await db[tabla].delete(registroId);
       } else {
-        const datosConTimestamp = {
+        datosAGuardar = {
           ...datos,
-          updated_at: datos.updated_at || new Date().toISOString()
+          updated_at: new Date().toISOString()
         };
-        await db[tabla].put(datosConTimestamp);
+        await db[tabla].put(datosAGuardar);
+        
+        // Actualizar la caché de memoria en RAM de inmediato
+        if (memoryDb && memoryDb[tabla]) {
+          const list = memoryDb[tabla] as any[];
+          const idx = list.findIndex((item: any) => item.id === registroId);
+          if (idx !== -1) {
+            list[idx] = {
+              ...list[idx],
+              ...datosAGuardar
+            };
+          }
+        }
       }
       
       if (!isMockMode) {
@@ -94,7 +108,7 @@ export const persistAndSync = async (
           tabla,
           registro_id: registroId,
           tipo_operacion: tipoOperacion,
-          datos: datos,
+          datos: datosAGuardar,
           creado_en: Date.now(),
           reintentos: 0
         });
@@ -182,6 +196,7 @@ export interface Mesa {
   estado: 'DISPONIBLE' | 'OCUPADA' | 'PAGANDO';
   cliente_nombre: string;
   consumos: ConsumoItem[];
+  updated_at?: string;
 }
 
 export interface Movimiento {
@@ -1054,6 +1069,7 @@ export const mockDb = {
         mesa.numero_mesa = nuevaMesa.numero_mesa || mesa.numero_mesa;
         mesa.cliente_nombre = nuevaMesa.cliente_nombre || mesa.cliente_nombre;
       }
+      mesa.updated_at = new Date().toISOString();
       
       const { creado_en, ...payload } = mesa as any;
       persistAndSync('mesas', mesa.id, 'UPDATE', payload);
@@ -1097,6 +1113,7 @@ export const mockDb = {
       mesa.estado = 'DISPONIBLE';
       mesa.cliente_nombre = '';
       mesa.consumos = [];
+      mesa.updated_at = new Date().toISOString();
       
       const { creado_en, ...payload } = mesa as any;
       persistAndSync('mesas', mesa.id, 'UPDATE', payload);
@@ -1202,6 +1219,7 @@ export const mockDb = {
         });
       }
       mesa.estado = 'OCUPADA';
+      mesa.updated_at = new Date().toISOString();
       
       const { creado_en, ...payload } = mesa as any;
       persistAndSync('mesas', mesa.id, 'UPDATE', payload);
@@ -1267,6 +1285,7 @@ export const mockDb = {
           mesa.estado = 'DISPONIBLE';
           mesa.cliente_nombre = '';
         }
+        mesa.updated_at = new Date().toISOString();
         
         const { creado_en, ...payload } = mesa as any;
         persistAndSync('mesas', mesa.id, 'UPDATE', payload);
