@@ -69,6 +69,8 @@ export const ensureDbInitialized = async () => {
   await dbInitializationPromise;
 };
 
+let localWriteQueue = Promise.resolve();
+
 export const persistAndSync = async (
   tabla: 'sedes' | 'insumos' | 'productos' | 'mesas' | 'movimientos' | 'ventas' | 'creditos' | 'prestamos' | 'cierres' | 'auditoria',
   registroId: string,
@@ -77,64 +79,75 @@ export const persistAndSync = async (
 ) => {
   if (typeof window === 'undefined' || !db) return;
   
-  try {
-    await db.transaction('rw', [db[tabla], db.cola_sincronizacion], async () => {
-      let datosAGuardar = datos;
-      
-      if (tipoOperacion === 'DELETE') {
-        await db[tabla].delete(registroId);
-      } else {
-        datosAGuardar = {
-          ...datos,
-          updated_at: new Date().toISOString()
-        };
-        await db[tabla].put(datosAGuardar);
-        
-        // Actualizar la caché de memoria en RAM de inmediato
-        if (memoryDb && memoryDb[tabla]) {
-          const list = memoryDb[tabla] as any[];
-          const idx = list.findIndex((item: any) => item.id === registroId);
-          if (idx !== -1) {
-            list[idx] = {
-              ...list[idx],
-              ...datosAGuardar
-            };
+  return new Promise<void>((resolve, reject) => {
+    localWriteQueue = localWriteQueue
+      .then(async () => {
+        try {
+          await db.transaction('rw', [db[tabla], db.cola_sincronizacion], async () => {
+            let datosAGuardar = datos;
+            
+            if (tipoOperacion === 'DELETE') {
+              await db[tabla].delete(registroId);
+            } else {
+              datosAGuardar = {
+                ...datos,
+                updated_at: new Date().toISOString()
+              };
+              await db[tabla].put(datosAGuardar);
+              
+              // Actualizar la caché de memoria en RAM de inmediato
+              if (memoryDb && memoryDb[tabla]) {
+                const list = memoryDb[tabla] as any[];
+                const idx = list.findIndex((item: any) => item.id === registroId);
+                if (idx !== -1) {
+                  list[idx] = {
+                    ...list[idx],
+                    ...datosAGuardar
+                  };
+                }
+              }
+            }
+            
+            if (!isMockMode) {
+              await db.cola_sincronizacion.add({
+                tabla,
+                registro_id: registroId,
+                tipo_operacion: tipoOperacion,
+                datos: datosAGuardar,
+                creado_en: Date.now(),
+                reintentos: 0
+              });
+            }
+          });
+          
+          if (!isMockMode) {
+            if (navigator.onLine) {
+              await syncService.syncPendingQueue();
+            } else {
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('sync_queue_updated'));
+              }
+            }
           }
+          resolve();
+        } catch (err: any) {
+          console.error(`❌ [Alico Offline] Error guardando cambio en IndexedDB para la tabla ${tabla}:`, err);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('db_error_occurred', {
+              detail: {
+                tabla,
+                message: err.message || JSON.stringify(err)
+              }
+            }));
+          }
+          reject(err);
+          throw err;
         }
-      }
-      
-      if (!isMockMode) {
-        await db.cola_sincronizacion.add({
-          tabla,
-          registro_id: registroId,
-          tipo_operacion: tipoOperacion,
-          datos: datosAGuardar,
-          creado_en: Date.now(),
-          reintentos: 0
-        });
-      }
-    });
-    
-    if (!isMockMode) {
-      if (navigator.onLine) {
-        syncService.syncPendingQueue();
-      } else {
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(new Event('sync_queue_updated'));
-        }
-      }
-    }
-  } catch (err: any) {
-    console.error(`❌ [Alico Offline] Error guardando cambio en IndexedDB para la tabla ${tabla}:`, err);
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('db_error_occurred', {
-        detail: {
-          tabla,
-          message: err.message || JSON.stringify(err)
-        }
-      }));
-    }
-  }
+      })
+      .catch((err) => {
+        console.error(`❌ [Alico Queue] Error en cola de escritura secuencial:`, err);
+      });
+  });
 };
 
 
@@ -1318,7 +1331,8 @@ export const mockDb = {
   // --- MOVIMIENTOS ---
   getMovimientos: (sedeId?: string): Movimiento[] => {
     const movs = getMockData().movimientos;
-    return sedeId ? movs.filter(m => m.sede_id === sedeId) : movs;
+    const filtered = sedeId ? movs.filter(m => m.sede_id === sedeId) : movs;
+    return [...filtered].sort((a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime());
   },
 
   // --- CATEGORIAS ---

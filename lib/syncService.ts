@@ -22,19 +22,19 @@ class SyncService {
     console.log('🔄 [Sync] Iniciando sincronización de cola de cambios pendientes...');
 
     try {
-      // 1. Obtener todas las operaciones de la cola local ordenadas cronológicamente (FIFO)
-      const queue: SyncOperation[] = await db.cola_sincronizacion
-        .orderBy('id')
-        .toArray();
+      while (true) {
+        // Obtener el primer elemento disponible de la cola de forma dinámica (FIFO)
+        const firstOps: SyncOperation[] = await db.cola_sincronizacion
+          .orderBy('id')
+          .limit(1)
+          .toArray();
 
-      if (queue.length === 0) {
-        console.log('🟢 [Sync] Cola vacía. Todos los dispositivos locales están al día.');
-        this.isSyncing = false;
-        return;
-      }
+        if (firstOps.length === 0) {
+          console.log('🟢 [Sync] Cola vacía. Todos los dispositivos locales están al día.');
+          break; // Salir del bucle, la cola está vacía
+        }
 
-      // 2. Procesar cada operación de manera secuencial para asegurar consistencia
-      for (const op of queue) {
+        const op = firstOps[0];
         const success = await this.processOperation(op);
         
         if (success) {
@@ -42,12 +42,10 @@ class SyncService {
           await db.cola_sincronizacion.delete(op.id!);
           console.log(`✅ [Sync] Sincronización exitosa: ${op.tabla} (ID: ${op.registro_id})`);
         } else {
-          // Si es error de red, pausamos el bucle para mantener el orden secuencial
-          console.warn(`⏳ [Sync] Error de red al sincronizar ${op.tabla} (ID: ${op.registro_id}). Se reintentará luego.`);
-          
-          // Incrementamos los reintentos locales
+          // Si es error de red o de base de datos temporal, detenemos para reintentar después
+          console.warn(`⏳ [Sync] Error de red o bloqueo al sincronizar ${op.tabla} (ID: ${op.registro_id}). Se reintentará luego.`);
           await db.cola_sincronizacion.update(op.id!, { reintentos: (op.reintentos || 0) + 1 });
-          break; // Salir del bucle para no reordenar transacciones dependientes
+          break; // Salir del bucle para mantener el orden secuencial estricto
         }
       }
     } catch (error) {
