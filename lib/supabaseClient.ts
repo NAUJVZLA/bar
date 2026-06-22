@@ -1769,7 +1769,8 @@ export const mockDb = {
   // --- CIERRES DE CAJA ---
   getCierres: (sedeId?: string): CierreCaja[] => {
     const cierres = getMockData().cierres;
-    return /^\s*$/.test(sedeId || '') ? cierres : cierres.filter(c => c.sede_id === sedeId);
+    const filtered = /^\s*$/.test(sedeId || '') ? cierres : cierres.filter(c => c.sede_id === sedeId);
+    return [...filtered].sort((a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime());
   },
   registrarCierre: (cierre: Omit<CierreCaja, 'id' | 'fecha_hora'>): CierreCaja => {
     const newCierre: CierreCaja = {
