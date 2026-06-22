@@ -64,6 +64,16 @@ export default function InventarioPage() {
 
   useEffect(() => {
     loadSedeData();
+
+    // Comprobar parámetro de pestaña en la URL de forma segura en el cliente
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam === 'movimientos') {
+        setActiveTab('movimientos');
+      }
+    }
+
     const handleSedeChange = () => {
       loadSedeData();
       closeModal();

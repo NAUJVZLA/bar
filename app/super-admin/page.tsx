@@ -462,8 +462,8 @@ export default function SuperAdminPage() {
     }
   };
 
-  // Totales consolidados de todas las sedes
-  const totalRecaudadoConsolidado = ventas.reduce((s, v) => s + v.total, 0);
+  // Totales consolidados de todas las sedes (excluyendo anuladas)
+  const totalRecaudadoConsolidado = ventas.filter(v => v.estado !== 'ANULADA').reduce((s, v) => s + v.total, 0);
   const totalProductosConsolidado = productos.length;
 
   return (
@@ -566,7 +566,7 @@ export default function SuperAdminPage() {
 
               <div className="space-y-3">
                 {sedes.map((s) => {
-                  const ventasSede = ventas.filter(v => v.sede_id === s.id);
+                  const ventasSede = ventas.filter(v => v.sede_id === s.id && v.estado !== 'ANULADA');
                   const totalSede = ventasSede.reduce((sum, v) => sum + v.total, 0);
 
                   return (

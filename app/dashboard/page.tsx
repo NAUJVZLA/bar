@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { mockDb, Producto, Mesa, Venta } from '@/lib/supabaseClient';
+import { mockDb, Producto, Mesa, Venta, CierreCaja } from '@/lib/supabaseClient';
 
 export default function DashboardPage() {
   const [activeSedeId, setActiveSedeId] = useState('');
@@ -10,6 +10,7 @@ export default function DashboardPage() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [mesas, setMesas] = useState<Mesa[]>([]);
   const [ventas, setVentas] = useState<Venta[]>([]);
+  const [cierres, setCierres] = useState<CierreCaja[]>([]);
 
   const loadSedeData = () => {
     const currentSedeId = localStorage.getItem('alico_active_sede') || 'sede-norte';
@@ -26,6 +27,7 @@ export default function DashboardPage() {
     setProductos(mockDb.getProductos(currentSedeId));
     setMesas(mockDb.getMesas(currentSedeId));
     setVentas(mockDb.getVentas(currentSedeId));
+    setCierres(mockDb.getCierres(currentSedeId));
   };
 
   useEffect(() => {
@@ -42,7 +44,26 @@ export default function DashboardPage() {
   }, []);
 
   // Cálculos estadísticos rápidos
-  const totalVentasValor = ventas.reduce((sum, v) => sum + v.total, 0);
+  // 1. Total ventas acumuladas (excluyendo anuladas)
+  const totalVentasValor = ventas.filter(v => v.estado !== 'ANULADA').reduce((sum, v) => sum + v.total, 0);
+
+  // 2. Ventas del día de hoy (excluyendo anuladas)
+  const todayStr = new Date().toDateString();
+  const ventasHoy = ventas.filter(v => {
+    const fechaVenta = new Date(v.fecha_hora);
+    return fechaVenta.toDateString() === todayStr && v.estado !== 'ANULADA';
+  });
+  const totalVentasHoy = ventasHoy.reduce((sum, v) => sum + v.total, 0);
+
+  // 3. Ventas del turno activo (desde el último cierre de caja, excluyendo anuladas)
+  const ultimoCierre = cierres.length > 0 ? cierres[0] : null;
+  const ventasTurno = ventas.filter(v => {
+    if (v.estado === 'ANULADA') return false;
+    if (!ultimoCierre) return true;
+    return new Date(v.fecha_hora) > new Date(ultimoCierre.fecha_hora);
+  });
+  const totalVentasTurno = ventasTurno.reduce((sum, v) => sum + v.total, 0);
+
   const totalProductos = productos.length;
   const mesasOcupadas = mesas.filter(m => m.estado === 'OCUPADA' || m.estado === 'PAGANDO').length;
   
@@ -83,19 +104,57 @@ export default function DashboardPage() {
       {/* Grid de Kpis */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1 */}
-        <div className="glass-card rounded-2xl p-5 border border-white/5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3 text-emerald-500 bg-emerald-500/5 rounded-bl-xl border-l border-b border-white/5">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.214.113a3.13 3.13 0 003.717-1.36L15 15M9 6.75V15m6-6.75V15" />
-            </svg>
+        <div className="glass-card rounded-2xl p-5 border border-white/5 relative overflow-hidden flex flex-col justify-between">
+          <div>
+            <Link
+              href="/dashboard/ventas?tab=HISTORIAL"
+              className="absolute top-0 right-0 p-3 text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/10 rounded-bl-xl border-l border-b border-white/5 transition-all cursor-pointer z-10"
+              title="Ver Historial de Ventas"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.214.113a3.13 3.13 0 003.717-1.36L15 15M9 6.75V15m6-6.75V15" />
+              </svg>
+            </Link>
+            <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Ventas del Turno (Caja Activa)</p>
+            <p className="text-2xl font-black text-white mt-2">
+              ${totalVentasTurno.toLocaleString('es-CO')}
+            </p>
+            <span className="text-[10px] font-semibold text-emerald-400 mt-2 block">
+              +{ventasTurno.length} transacciones en turno
+            </span>
+
+            <div className="mt-4 pt-3 border-t border-white/5 space-y-2">
+              <div className="flex justify-between items-center text-[10px] text-zinc-400">
+                <span className="font-medium">Ventas de Hoy (Día):</span>
+                <span className="font-bold text-zinc-300">${totalVentasHoy.toLocaleString('es-CO')}</span>
+              </div>
+              <div className="flex justify-between items-center text-[10px] text-zinc-500">
+                <span className="font-medium">Acumulado Histórico:</span>
+                <span className="font-semibold text-zinc-400">${totalVentasValor.toLocaleString('es-CO')}</span>
+              </div>
+            </div>
           </div>
-          <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Ventas Acumuladas</p>
-          <p className="text-2xl font-black text-white mt-2">
-            ${totalVentasValor.toLocaleString('es-CO')}
-          </p>
-          <span className="text-[10px] font-semibold text-emerald-400 mt-2 block">
-            +{ventas.length} transacciones registradas
-          </span>
+
+          <div className="mt-4 pt-3 border-t border-white/5 grid grid-cols-2 gap-2">
+            <Link
+              href="/dashboard/ventas?tab=HISTORIAL"
+              className="flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-white/2 hover:bg-white/5 border border-white/5 text-[9px] font-black text-zinc-300 hover:text-white transition-all text-center"
+            >
+              Ver Ventas
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 flex-shrink-0">
+                <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.63l-3-3a.75.75 0 111.06-1.06l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 11-1.06-1.06l3-3H3.75A.75.75 0 013 10z" clipRule="evenodd" />
+              </svg>
+            </Link>
+            <Link
+              href="/dashboard/inventario?tab=movimientos"
+              className="flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-white/2 hover:bg-white/5 border border-white/5 text-[9px] font-black text-zinc-300 hover:text-white transition-all text-center"
+            >
+              Ver Entradas/Salidas
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3 flex-shrink-0">
+                <path fillRule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.63l-3-3a.75.75 0 111.06-1.06l4.25 4.25a.75.75 0 010 1.06l-4.25 4.25a.75.75 0 11-1.06-1.06l3-3H3.75A.75.75 0 013 10z" clipRule="evenodd" />
+              </svg>
+            </Link>
+          </div>
         </div>
 
         {/* KPI 2 */}

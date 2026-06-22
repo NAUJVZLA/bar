@@ -44,17 +44,17 @@ export default function CierreCajaPage() {
     // Cargar ventas de la sede
     const todasLasVentas = mockDb.getVentas(currentSedeId);
 
-    // FILTRAR VENTAS ACTIVAS: Solo aquellas hechas después del último cierre
+    // FILTRAR VENTAS ACTIVAS: Solo aquellas hechas después del último cierre (excluyendo anuladas)
     if (cierres.length > 0) {
       const ultimoCierreFecha = new Date(cierres[0].fecha_hora);
       const ventasActivas = todasLasVentas.filter(v => {
         const fechaVenta = new Date(v.fecha_hora);
-        return fechaVenta > ultimoCierreFecha;
+        return fechaVenta > ultimoCierreFecha && v.estado !== 'ANULADA';
       });
       setVentasSede(ventasActivas);
     } else {
-      // Si nunca ha habido un cierre, tomamos todas las ventas registradas
-      setVentasSede(todasLasVentas);
+      // Si nunca ha habido un cierre, tomamos todas las ventas registradas (excluyendo anuladas)
+      setVentasSede(todasLasVentas.filter(v => v.estado !== 'ANULADA'));
     }
   };
 

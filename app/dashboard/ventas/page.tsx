@@ -42,6 +42,15 @@ export default function VentasPage() {
   useEffect(() => {
     loadSedeData();
 
+    // Comprobar parámetro de pestaña en la URL de forma segura en el cliente
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam === 'HISTORIAL') {
+        setActiveTab('HISTORIAL');
+      }
+    }
+
     // Sincronizar reactivamente al cambiar de sede
     const handleSedeChange = () => {
       loadSedeData();
