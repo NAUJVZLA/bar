@@ -46,45 +46,18 @@ BEGIN
         v_nuevo_cliente := p_cliente_nombre;
         v_consumo_fusionado := p_consumos;
         
-    -- Caso B: Ambas están ocupadas. Fusión inteligente de consumos de forma acumulativa
+    -- Caso B: Ambas están ocupadas.
     ELSIF v_mesa_nube.estado = 'OCUPADA' AND p_estado = 'OCUPADA' THEN
         v_nuevo_estado := 'OCUPADA';
         v_nuevo_cliente := COALESCE(v_mesa_nube.cliente_nombre, p_cliente_nombre);
         
-        -- Algoritmo SQL de fusión JSONB por id de producto.
-        -- Agrupa consumos de ambos dispositivos seleccionando la cantidad máxima o sumándolos.
-        WITH consumos_unidos AS (
-            SELECT 
-                (elem->>'producto_id')::text as prod_id,
-                (elem->>'nombre')::text as nombre,
-                (elem->>'precio_unitario')::numeric as precio,
-                (elem->>'registrado_por')::text as mesero,
-                (elem->>'cantidad')::integer as cantidad
-            FROM (
-                SELECT jsonb_array_elements(v_mesa_nube.consumos) AS elem
-                UNION ALL
-                SELECT jsonb_array_elements(p_consumos) AS elem
-            ) t
-        ),
-        consumos_agrupados AS (
-            -- Agrupamos por producto para evitar duplicados en la mesa.
-            -- Tomamos el mesero que registró la última acción y el precio unitario correcto.
-            SELECT 
-                prod_id,
-                nombre,
-                MAX(cantidad) as cantidad, -- Evita duplicar si es el mismo envío sincronizado tarde
-                MAX(precio) as precio_unitario,
-                MAX(mesero) as registrado_por
-            FROM consumos_unidos
-            GROUP BY prod_id, nombre
-        )
-        SELECT jsonb_agg(json_build_object(
-            'producto_id', prod_id,
-            'nombre', nombre,
-            'cantidad', cantidad,
-            'precio_unitario', precio_unitario,
-            'registrado_por', registrado_por
-        )) INTO v_consumo_fusionado FROM consumos_agrupados;
+        -- Si la actualización local es más reciente, confiamos en el estado local de consumos (permite eliminaciones)
+        IF p_updated_at > v_mesa_nube.updated_at THEN
+            v_consumo_fusionado := p_consumos;
+        ELSE
+            -- Si la nube es más reciente, confiamos en la nube
+            v_consumo_fusionado := v_mesa_nube.consumos;
+        END IF;
         
     -- Caso C: LWW clásico (Last-Write-Wins) en base a marcas de tiempo updated_at para otros estados
     ELSE
