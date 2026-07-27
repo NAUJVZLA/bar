@@ -239,7 +239,7 @@ class SyncService {
     }
     // Lista de códigos de error de Postgres SQL que representan fallos permanentes
     // (ej. Restricción de llave foránea inválida, violación de check constraint, etc.)
-    const permanentDbErrors = ['23503', '23505', '23514', '42P01', '42703', '22P02'];
+    const permanentDbErrors = ['23503', '23505', '23514', '42P01', '42703', '22P02', '42501'];
     
     if (permanentDbErrors.includes(error.code) || op.reintentos > 15) {
       console.error(`⚠️ [Sync] Descartando transacción bloqueada/corrupta de la cola para evitar atascar el POS:`, op, 'Detalle:', error);

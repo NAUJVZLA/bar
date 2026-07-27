@@ -987,18 +987,48 @@ export const mockDb = {
     if (prod.id) {
       const idx = memoryDb.productos.findIndex(p => p.id === prod.id);
       if (idx !== -1) {
-        const oldStock = memoryDb.productos[idx].stock_actual;
+        const oldProd = memoryDb.productos[idx];
+        const oldStock = oldProd.stock_actual;
         const diff = prod.stock_actual - oldStock;
+
+        // Determinar si hubo cambios en otros campos
+        const nameChanged = prod.nombre !== undefined && prod.nombre !== oldProd.nombre;
+        const priceChanged = (prod.precio_venta !== undefined && prod.precio_venta !== oldProd.precio_venta) ||
+                             (prod.precio_compra !== undefined && prod.precio_compra !== oldProd.precio_compra);
+        const catChanged = prod.categoria !== undefined && prod.categoria !== oldProd.categoria;
+        const codeChanged = prod.codigo_barras !== undefined && prod.codigo_barras !== oldProd.codigo_barras;
+        const recipeChanged = prod.receta !== undefined && JSON.stringify(prod.receta) !== JSON.stringify(oldProd.receta);
+        const wasEdited = nameChanged || priceChanged || catChanged || codeChanged || recipeChanged;
+
         if (diff !== 0) {
           const type = diff > 0 ? 'INGRESO' : 'EGRESO';
+          let motive = 'Ajuste manual de inventario';
+          if (wasEdited) {
+            motive += ' (y edición de datos)';
+          }
           newMovement = {
             id: 'mov-' + Date.now(),
             producto_id: prod.id,
-            producto_nombre: prod.nombre,
+            producto_nombre: prod.nombre || oldProd.nombre,
             sede_id: prod.sede_id,
             tipo: type,
             cantidad: Math.abs(diff),
-            motivo: 'Ajuste manual de inventario',
+            motivo: motive,
+            registrado_por: prod.registrado_por || 'Sistema',
+            fecha_hora: new Date().toISOString()
+          };
+          memoryDb.movimientos.unshift(newMovement);
+        } else if (wasEdited) {
+          // Si fue editado sin cambio de stock, registrar un movimiento de tipo INGRESO con cantidad 0
+          // (INGRESO es usado por restricciones del check constraint en Supabase)
+          newMovement = {
+            id: 'mov-' + Date.now(),
+            producto_id: prod.id,
+            producto_nombre: prod.nombre || oldProd.nombre,
+            sede_id: prod.sede_id,
+            tipo: 'INGRESO',
+            cantidad: 0,
+            motivo: 'Edición de datos del producto (sin cambio de stock)',
             registrado_por: prod.registrado_por || 'Sistema',
             fecha_hora: new Date().toISOString()
           };

@@ -361,8 +361,10 @@ export default function InventarioPage() {
 
   // Filtrado de Movimientos
   const movimientosFiltrados = movimientos.filter(m => {
-    const matchesSearch = m.producto_nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
-                          m.registrado_por.toLowerCase().includes(busqueda.toLowerCase());
+    const pNombre = m.producto_nombre || '';
+    const rPor = m.registrado_por || '';
+    const matchesSearch = pNombre.toLowerCase().includes(busqueda.toLowerCase()) || 
+                          rPor.toLowerCase().includes(busqueda.toLowerCase());
     const matchesType = tipoMovFiltro === 'TODOS' || m.tipo === tipoMovFiltro;
     return matchesSearch && matchesType;
   });
