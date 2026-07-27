@@ -637,42 +637,60 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     console.log('🔄 [Alico Sync] Descargando base de datos desde Supabase...');
     const [
       sedesRes,
+    // Helper para paginación/chunked fetching de tablas grandes (>1000 filas)
+    const fetchFullTable = async (tableName: string, orderByField?: string): Promise<any[]> => {
+      let allData: any[] = [];
+      let from = 0;
+      let to = 999;
+      const chunkSize = 1000;
+      while (true) {
+        let query = supabase.from(tableName).select('*').range(from, to);
+        if (orderByField) {
+          query = query.order(orderByField, { ascending: false });
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < chunkSize) break;
+        from += chunkSize;
+        to += chunkSize;
+      }
+      return allData;
+    };
+
+    const [
+      sedesRes,
       insumosRes,
       productosRes,
       mesasRes,
-      movimientosRes,
-      ventasRes,
       creditosRes,
-      prestamosRes,
-      cierresRes
+      prestamosRes
     ] = await Promise.all([
       supabase.from('sedes').select('*'),
       supabase.from('insumos').select('*'),
       supabase.from('productos').select('*'),
       supabase.from('mesas').select('*'),
-      supabase.from('movimientos').select('*'),
-      supabase.from('ventas').select('*'),
       supabase.from('creditos').select('*'),
-      supabase.from('prestamos').select('*'),
-      supabase.from('cierres').select('*')
+      supabase.from('prestamos').select('*')
     ]);
 
     if (sedesRes.error) throw sedesRes.error;
     if (insumosRes.error) throw insumosRes.error;
     if (productosRes.error) throw productosRes.error;
     if (mesasRes.error) throw mesasRes.error;
-    if (movimientosRes.error) throw movimientosRes.error;
-    if (ventasRes.error) throw ventasRes.error;
     if (creditosRes.error) throw creditosRes.error;
     if (prestamosRes.error) throw prestamosRes.error;
-    if (cierresRes.error) throw cierresRes.error;
 
-    let auditoriaRes: any = { data: [] };
+    const rawMovimientos = await fetchFullTable('movimientos', 'fecha_hora');
+    const rawVentas = await fetchFullTable('ventas', 'fecha_hora');
+    const rawCierres = await fetchFullTable('cierres', 'fecha_hora');
+    
+    let rawAuditoria: any[] = [];
     try {
-      const res = await supabase.from('auditoria').select('*');
-      if (!res.error) auditoriaRes = res;
+      rawAuditoria = await fetchFullTable('auditoria', 'fecha_hora');
     } catch (e) {
-      console.warn('⚠️ [Alico Sync] La tabla "auditoria" no está creada en Supabase. Usando almacenamiento local.');
+      console.warn('⚠️ [Alico Sync] La tabla "auditoria" no está creada en Supabase o falló. Usando almacenamiento local.');
     }
 
     const parsedInsumos = (insumosRes.data || []).map((i: any) => ({
@@ -699,12 +717,12 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       }))
     }));
 
-    const parsedMovimientos = (movimientosRes.data || []).map((m: any) => ({
+    const parsedMovimientos = rawMovimientos.map((m: any) => ({
       ...m,
       cantidad: Number(m.cantidad) || 0
     }));
 
-    const parsedVentas = (ventasRes.data || []).map((v: any) => ({
+    const parsedVentas = rawVentas.map((v: any) => ({
       ...v,
       total: Number(v.total) || 0,
       items: (v.items || []).map((item: any) => ({
@@ -726,7 +744,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       descontó_stock: p.desconto_stock ?? false
     }));
 
-    const parsedCierres = (cierresRes.data || []).map((c: any) => ({
+    const parsedCierres = rawCierres.map((c: any) => ({
       ...c,
       monto_apertura: Number(c.monto_apertura) || 0,
       ventas_efectivo: Number(c.ventas_efectivo) || 0,
@@ -739,7 +757,7 @@ export const syncFromSupabase = async (): Promise<boolean> => {
       ventas_count: Number(c.ventas_count) || 0
     }));
 
-    const parsedAuditoria = (auditoriaRes.data || []).map((a: any) => ({
+    const parsedAuditoria = rawAuditoria.map((a: any) => ({
       ...a
     }));
 
@@ -1368,6 +1386,45 @@ export const mockDb = {
       const cleanB = isNaN(timeB) ? 0 : timeB;
       return cleanB - cleanA;
     });
+  },
+  vaciarMovimientos: async (sedeId: string): Promise<void> => {
+    // 1. Filtrar memoria RAM
+    memoryDb.movimientos = memoryDb.movimientos.filter(m => m.sede_id !== sedeId);
+    
+    // 2. Filtrar base de datos local IndexedDB y encolar borrados para Supabase
+    if (typeof window !== 'undefined' && db) {
+      try {
+        const allMovs = await db.movimientos.where('sede_id').equals(sedeId).toArray();
+        const ids = allMovs.map(m => m.id);
+        
+        await db.movimientos.bulkDelete(ids);
+        
+        if (!isMockMode) {
+          // Registrar operaciones de eliminación en la cola de sincronización para Supabase
+          const now = Date.now();
+          const deleteOps = ids.map(id => ({
+            tabla: 'movimientos' as const,
+            registro_id: id,
+            tipo_operacion: 'DELETE' as const,
+            datos: {},
+            creado_en: now,
+            reintentos: 0
+          }));
+          await db.cola_sincronizacion.bulkAdd(deleteOps);
+        }
+        
+        // Disparar evento para refrescar la UI local de inmediato
+        window.dispatchEvent(new Event('cloudSync'));
+
+        // Forzar envío a Supabase si estamos online
+        if (!isMockMode && navigator.onLine) {
+          const { syncService } = await import('@/lib/syncService');
+          syncService.syncPendingQueue();
+        }
+      } catch (err) {
+        console.error('❌ [Alico DB] Error al vaciar movimientos locales:', err);
+      }
+    }
   },
 
   // --- CATEGORIAS ---
