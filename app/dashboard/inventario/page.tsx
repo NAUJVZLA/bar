@@ -414,6 +414,7 @@ export default function InventarioPage() {
               + Añadir Producto Final
             </button>
           ) : activeTab === 'movimientos' ? (
+            /* COMENTADO A PETICIÓN DEL CLIENTE PARA EVITAR BORRADOS ACCIDENTALES:
             <button
               onClick={handleVaciarMovimientosClick}
               className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 text-red-300 text-xs font-bold rounded-xl shadow-lg flex items-center gap-1.5 transition-all"
@@ -423,6 +424,8 @@ export default function InventarioPage() {
               </svg>
               Vaciar Historial
             </button>
+            */
+            null
           ) : null}
         </div>
       </div>

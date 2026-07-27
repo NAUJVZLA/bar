@@ -636,7 +636,12 @@ export const syncFromSupabase = async (): Promise<boolean> => {
   try {
     console.log('🔄 [Alico Sync] Descargando base de datos desde Supabase...');
     // Helper para paginación/chunked fetching de tablas grandes (>1000 filas)
-    const fetchFullTable = async (tableName: string, orderByField?: string): Promise<any[]> => {
+    const fetchFullTable = async (
+      tableName: string, 
+      orderByField?: string,
+      dateFilterField?: string,
+      minDateStr?: string
+    ): Promise<any[]> => {
       let allData: any[] = [];
       let from = 0;
       let to = 999;
@@ -645,6 +650,9 @@ export const syncFromSupabase = async (): Promise<boolean> => {
         let query = supabase.from(tableName).select('*').range(from, to);
         if (orderByField) {
           query = query.order(orderByField, { ascending: false });
+        }
+        if (dateFilterField && minDateStr) {
+          query = query.gte(dateFilterField, minDateStr);
         }
         const { data, error } = await query;
         if (error) throw error;
@@ -680,7 +688,12 @@ export const syncFromSupabase = async (): Promise<boolean> => {
     if (creditosRes.error) throw creditosRes.error;
     if (prestamosRes.error) throw prestamosRes.error;
 
-    const rawMovimientos = await fetchFullTable('movimientos', 'fecha_hora');
+    // Calcular fecha límite de hace 60 días para descargar movimientos
+    const sixtyDaysAgo = new Date();
+    sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+    const minDateStr = sixtyDaysAgo.toISOString();
+
+    const rawMovimientos = await fetchFullTable('movimientos', 'fecha_hora', 'fecha_hora', minDateStr);
     const rawVentas = await fetchFullTable('ventas', 'fecha_hora');
     const rawCierres = await fetchFullTable('cierres', 'fecha_hora');
     
