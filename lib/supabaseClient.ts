@@ -635,8 +635,6 @@ export const syncFromSupabase = async (): Promise<boolean> => {
   }
   try {
     console.log('🔄 [Alico Sync] Descargando base de datos desde Supabase...');
-    const [
-      sedesRes,
     // Helper para paginación/chunked fetching de tablas grandes (>1000 filas)
     const fetchFullTable = async (tableName: string, orderByField?: string): Promise<any[]> => {
       let allData: any[] = [];
