@@ -1358,11 +1358,16 @@ export const mockDb = {
     return null;
   },
 
-  // --- MOVIMIENTOS ---
   getMovimientos: (sedeId?: string): Movimiento[] => {
     const movs = getMockData().movimientos;
     const filtered = sedeId ? movs.filter(m => m.sede_id === sedeId) : movs;
-    return [...filtered].sort((a, b) => new Date(b.fecha_hora).getTime() - new Date(a.fecha_hora).getTime());
+    return [...filtered].sort((a, b) => {
+      const timeA = a.fecha_hora ? new Date(a.fecha_hora).getTime() : 0;
+      const timeB = b.fecha_hora ? new Date(b.fecha_hora).getTime() : 0;
+      const cleanA = isNaN(timeA) ? 0 : timeA;
+      const cleanB = isNaN(timeB) ? 0 : timeB;
+      return cleanB - cleanA;
+    });
   },
 
   // --- CATEGORIAS ---

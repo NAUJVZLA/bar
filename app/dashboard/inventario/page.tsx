@@ -2,8 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { mockDb, Producto, Movimiento, Insumo, RecetaItem } from '@/lib/supabaseClient';
+import { useSyncQueue } from '@/hooks/useSyncQueue';
 
 export default function InventarioPage() {
+  const { isOnline, pendingCount, syncError } = useSyncQueue();
   const [activeSedeId, setActiveSedeId] = useState('');
   const [activeTab, setActiveTab] = useState<'stock' | 'insumos' | 'movimientos' | 'categorias'>('stock');
   const [productos, setProductos] = useState<Producto[]>([]);
@@ -726,6 +728,39 @@ export default function InventarioPage() {
       ) : (
         /* MOVIMIENTOS */
         <div className="glass-card rounded-2xl border border-white/5 overflow-hidden">
+          {/* Panel de Diagnóstico de Sincronización */}
+          <div className="p-4 bg-zinc-950/60 border-b border-white/5 flex flex-wrap items-center justify-between gap-4 text-[10px]">
+            <div className="flex items-center gap-4 flex-wrap">
+              <span className="flex items-center gap-1.5 font-bold text-zinc-400 uppercase tracking-wider">
+                <span className={`h-2 w-2 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                {isOnline ? 'Conexión: Activa' : 'Conexión: Local'}
+              </span>
+              <span className="text-zinc-800">|</span>
+              <span className="font-bold text-zinc-400 uppercase tracking-wider">
+                Movimientos cargados: <strong className="text-white text-xs">{movimientos.length}</strong>
+              </span>
+              {pendingCount > 0 && (
+                <>
+                  <span className="text-zinc-800">|</span>
+                  <span className="font-bold text-amber-400 uppercase tracking-wider animate-pulse flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                      <path fillRule="evenodd" d="M10 3a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 3zM5.4 6.12a.75.75 0 011.06 0l1.06 1.06a.75.75 0 11-1.06 1.06L5.4 7.18a.75.75 0 010-1.06zm9.2 0a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zM10 8.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z" clipRule="evenodd" />
+                    </svg>
+                    Pendientes de subir: {pendingCount}
+                  </span>
+                </>
+              )}
+            </div>
+            {syncError && (
+              <div className="text-[9px] font-bold bg-red-950/20 border border-red-500/20 text-red-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5 animate-pulse max-w-full truncate">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 text-red-500 flex-shrink-0">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                </svg>
+                <span>Fallo de red al subir {syncError.tabla}: {syncError.message} (Cód: {syncError.code})</span>
+              </div>
+            )}
+          </div>
+          
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="border-b border-white/5 bg-black/40 text-[10px] font-bold text-zinc-400 uppercase tracking-widest">
@@ -738,18 +773,26 @@ export default function InventarioPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-zinc-300">
-              {movimientosFiltrados.map(m => (
-                <tr key={m.id}>
-                  <td className="py-2 px-4">{new Date(m.fecha_hora).toLocaleString('es-CO')}</td>
-                  <td className="py-2 px-4 font-bold">{m.producto_nombre}</td>
-                  <td className="py-2 px-4">
-                    <span className={`px-2 py-0.5 rounded text-[9px] ${m.tipo==='INGRESO'?'bg-emerald-500/20 text-emerald-400':'bg-red-500/20 text-red-400'}`}>{m.tipo}</span>
+              {movimientosFiltrados.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-zinc-500 italic">
+                    No hay movimientos registrados.
                   </td>
-                  <td className="py-2 px-4 text-center font-bold">{m.cantidad}</td>
-                  <td className="py-2 px-4">{m.motivo}</td>
-                  <td className="py-2 px-4">{m.registrado_por}</td>
                 </tr>
-              ))}
+              ) : (
+                movimientosFiltrados.map(m => (
+                  <tr key={m.id}>
+                    <td className="py-2 px-4">{new Date(m.fecha_hora).toLocaleString('es-CO')}</td>
+                    <td className="py-2 px-4 font-bold">{m.producto_nombre}</td>
+                    <td className="py-2 px-4">
+                      <span className={`px-2 py-0.5 rounded text-[9px] ${m.tipo==='INGRESO'?'bg-emerald-500/20 text-emerald-400':'bg-red-500/20 text-red-400'}`}>{m.tipo}</span>
+                    </td>
+                    <td className="py-2 px-4 text-center font-bold">{m.cantidad}</td>
+                    <td className="py-2 px-4">{m.motivo}</td>
+                    <td className="py-2 px-4">{m.registrado_por}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
